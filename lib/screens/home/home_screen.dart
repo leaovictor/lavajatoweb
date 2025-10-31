@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/screens/scheduling/scheduling_screen.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/services/auth_service.dart';
+import 'package:lavajato/screens/service/service_registration_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,14 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 300,
-                  childAspectRatio: 3 / 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                 ),
                 itemCount: services.length,
                 itemBuilder: (context, index) {
                   final service = services[index];
-                  return _ServiceCard(service: service);
+                  return _ServiceCard(service: service, firestoreService: _firestoreService);
                 },
               );
             } else {
@@ -60,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: services.length,
                 itemBuilder: (context, index) {
                   final service = services[index];
-                  return _ServiceCard(service: service);
+                  return _ServiceCard(service: service, firestoreService: _firestoreService);
                 },
               );
             }
@@ -72,12 +73,16 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({required this.service});
+  _ServiceCard({required this.service, required this.firestoreService});
 
   final Service service;
+  final FirestoreService firestoreService;
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = _authService.currentUser?.email == 'teste@teste.com';
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
@@ -102,12 +107,8 @@ class _ServiceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: Text(
-                  service.description,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+              Text(
+                service.description,
               ),
               const SizedBox(height: 8),
               Row(
@@ -124,6 +125,56 @@ class _ServiceCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (isAdmin)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ServiceRegistrationScreen(service: service),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        final bool confirmDelete = await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Confirmar Exclusão'),
+                                  content: Text(
+                                      'Tem certeza que deseja excluir o serviço ${service.name}?'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Excluir'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ) ??
+                            false;
+
+                        if (confirmDelete) {
+                          firestoreService.deleteService(service.id);
+                        }
+                      },
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

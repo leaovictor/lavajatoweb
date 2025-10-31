@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
-import 'package:lavajato/screens/home/home_screen.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   const MyAppointmentsScreen({super.key});

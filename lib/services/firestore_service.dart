@@ -11,6 +11,14 @@ class FirestoreService {
     return _db.collection('services').add(serviceData);
   }
 
+  Future<void> updateService(String serviceId, Map<String, dynamic> serviceData) {
+    return _db.collection('services').doc(serviceId).update(serviceData);
+  }
+
+  Future<void> deleteService(String serviceId) {
+    return _db.collection('services').doc(serviceId).delete();
+  }
+
   Future<void> addAppointment(Map<String, dynamic> appointmentData) {
     return _db.collection('appointments').add(appointmentData);
   }
