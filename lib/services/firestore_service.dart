@@ -7,6 +7,10 @@ class FirestoreService {
     return _db.collection('services').snapshots();
   }
 
+  Future<void> addService(Map<String, dynamic> serviceData) {
+    return _db.collection('services').add(serviceData);
+  }
+
   Future<void> addAppointment(Map<String, dynamic> appointmentData) {
     return _db.collection('appointments').add(appointmentData);
   }

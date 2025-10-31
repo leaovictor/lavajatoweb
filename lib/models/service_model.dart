@@ -25,4 +25,13 @@ class Service {
       duration: data['duration'] ?? 60,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'description': description,
+      'price': price,
+      'duration': duration,
+    };
+  }
 }
