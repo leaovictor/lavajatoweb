@@ -33,6 +33,7 @@ class AppTheme {
       surface: _AppColors.lightCard,
       background: _AppColors.lightBackground,
       error: _AppColors.cancelButtonColor,
+      onError: Colors.white,
     ),
     cardTheme: CardTheme(
       elevation: 4,
@@ -63,6 +64,7 @@ class AppTheme {
       surface: _AppColors.darkCard,
       background: _AppColors.darkBackground,
       error: _AppColors.cancelButtonColor,
+      onError: Colors.black,
     ),
     cardTheme: CardTheme(
       elevation: 4,
