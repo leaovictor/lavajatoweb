@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
+import 'package:lavajato/screens/service/service_registration_screen.dart';
 import 'package:lavajato/services/auth_service.dart';
 import 'package:lavajato/theme/theme_notifier.dart';
 import 'package:provider/provider.dart';
@@ -65,6 +66,20 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
+      floatingActionButton: _selectedIndex == 0 &&
+              _authService.currentUser?.email == 'admin@lavajato.com'
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ServiceRegistrationScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth < 600) {
