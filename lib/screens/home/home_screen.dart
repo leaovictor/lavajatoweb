@@ -106,12 +106,10 @@ class _ServiceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              Expanded(
-                child: Text(
-                  service.description,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+              Text(
+                service.description,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
               const SizedBox(height: 8),
               Row(
