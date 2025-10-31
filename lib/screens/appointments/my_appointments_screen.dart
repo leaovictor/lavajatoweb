@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/screens/home/home_screen.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   const MyAppointmentsScreen({super.key});
@@ -24,53 +25,67 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
       );
     }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getMyAppointments(_user.uid),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Erro ao carregar agendamentos.'));
-        }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Meus Agendamentos'),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestoreService.getMyAppointments(_user.uid),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text('Erro ao carregar agendamentos.'));
+          }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('Você não possui agendamentos.'));
-        }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('Você não possui agendamentos.'));
+          }
 
-        final appointments = snapshot.data!.docs
-            .map((doc) => Appointment.fromFirestore(doc))
-            .toList();
+          final appointments = snapshot.data!.docs
+              .map((doc) => Appointment.fromFirestore(doc))
+              .toList();
 
-        return ListView.builder(
-          itemCount: appointments.length,
-          itemBuilder: (context, index) {
-            final appointment = appointments[index];
-            final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
-            final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
+          return ListView.builder(
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              final appointment = appointments[index];
+              final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
+              final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListTile(
-                title: Text(
-                  appointment.serviceName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(
+                    appointment.serviceName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('Em $formattedDate às $formattedTime'),
+                  leading: Icon(
+                    appointment.startTime.isBefore(DateTime.now())
+                        ? Icons.check_circle
+                        : Icons.history,
+                    color: appointment.startTime.isBefore(DateTime.now())
+                        ? Colors.green
+                        : Colors.blue,
+                  ),
                 ),
-                subtitle: Text('Em $formattedDate às $formattedTime'),
-                leading: Icon(
-                  appointment.startTime.isBefore(DateTime.now())
-                      ? Icons.check_circle
-                      : Icons.history,
-                  color: appointment.startTime.isBefore(DateTime.now())
-                      ? Colors.green
-                      : Colors.blue,
-                ),
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

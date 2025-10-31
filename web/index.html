@@ -19,6 +19,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
+  <meta name="google-signin-client_id" content="958975821076-aqj9q488gvrqtn7kg7iqc1ke7vka4jce.apps.googleusercontent.com">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -31,6 +32,24 @@
 
   <title>lavajato</title>
   <link rel="manifest" href="manifest.json">
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJWXAnskXhC2-0aVbdk6kSZ8y7zh2Q0ns",
+      authDomain: "lavajato-5944c.firebaseapp.com",
+      projectId: "lavajato-5944c",
+      storageBucket: "lavajato-5944c.firebasestorage.app",
+      messagingSenderId: "136391405566",
+      appId: "1:136391405566:web:3277db47e3dc4670619aaf",
+      measurementId: "G-ZHZ019XBV7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

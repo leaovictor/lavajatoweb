@@ -5,7 +5,7 @@ class AppTheme {
     primarySwatch: Colors.blue,
     brightness: Brightness.light,
     useMaterial3: true,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -24,7 +24,7 @@ class AppTheme {
     primarySwatch: Colors.blue,
     brightness: Brightness.dark,
     useMaterial3: true,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
