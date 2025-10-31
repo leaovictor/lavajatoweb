@@ -26,9 +26,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Meus Agendamentos'),
-      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestoreService.getMyAppointments(_user.uid),
         builder: (context, snapshot) {
@@ -78,15 +75,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

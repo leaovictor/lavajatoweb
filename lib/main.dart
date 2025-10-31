@@ -42,6 +42,7 @@ class MyApp extends StatelessWidget {
           ],
           locale: const Locale('pt', 'BR'),
           home: const AuthGate(),
+          debugShowCheckedModeBanner: false,
         );
       },
     );
