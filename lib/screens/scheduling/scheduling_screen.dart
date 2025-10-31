@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -200,8 +202,16 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
+                        log('Erro ao carregar horários: ${snapshot.error}');
                         return const Center(
-                            child: Text('Erro ao carregar horários.'));
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'Erro ao carregar horários. Verifique as regras de segurança do Firestore.',
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
                       }
 
                       final bookedAppointments = snapshot.data?.docs
