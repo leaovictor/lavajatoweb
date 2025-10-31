@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,10 +32,19 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
         title: const Text('Meus Agendamentos'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestoreService.getMyAppointments(_user.uid),
+        stream: _firestoreService.getMyAppointments(_user!.uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return const Center(child: Text('Erro ao carregar agendamentos.'));
+            log('Erro ao carregar agendamentos: ${snapshot.error}');
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Erro ao carregar agendamentos. Pode ser necessário criar um índice no Firestore. Verifique o console de depuração para obter mais detalhes.',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -52,11 +63,14 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             itemCount: appointments.length,
             itemBuilder: (context, index) {
               final appointment = appointments[index];
-              final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
-              final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
+              final formattedDate =
+                  DateFormat('dd/MM/yyyy').format(appointment.startTime);
+              final formattedTime =
+                  DateFormat('HH:mm').format(appointment.startTime);
 
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
                   title: Text(
                     appointment.serviceName,
