@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "136391405566",
+    "project_id": "lavajato-5944c",
+    "storage_bucket": "lavajato-5944c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:136391405566:android:2665b2b7600f8708619aaf",
+        "android_client_info": {
+          "package_name": "br.dev.victorleao.lavajato"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo_CMOjQRbf_-bEGjMWVd4ADtQ1f8OwOg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
