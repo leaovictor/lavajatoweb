@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:lavajato/models/service_model.dart';
@@ -18,7 +20,16 @@ class HomeScreen extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(child: Text('Erro ao carregar serviços.'));
+          log('Erro ao carregar serviços: ${snapshot.error}');
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Erro ao carregar serviços. Verifique as regras de segurança do Firestore.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(child: Text('Nenhum serviço disponível.'));
