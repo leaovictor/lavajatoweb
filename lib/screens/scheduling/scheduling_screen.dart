@@ -35,7 +35,8 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Você precisa estar logado para agendar.')),
+        const SnackBar(
+            content: Text('Você precisa estar logado para agendar.')),
       );
       return;
     }
@@ -100,8 +101,8 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
     const int lunchEnd = 13;
     final int serviceDuration = widget.service.duration;
 
-    DateTime potentialSlot = DateTime(
-        _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, openingHour);
+    DateTime potentialSlot = DateTime(_selectedDay!.year, _selectedDay!.month,
+        _selectedDay!.day, openingHour);
 
     while (potentialSlot.hour < closingHour) {
       final potentialSlotTimeOfDay = TimeOfDay.fromDateTime(potentialSlot);
@@ -194,7 +195,8 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                 ),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
-                    stream: _firestoreService.getAppointmentsForDay(_selectedDay!),
+                    stream:
+                        _firestoreService.getAppointmentsForDay(_selectedDay!),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());

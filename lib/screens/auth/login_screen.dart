@@ -25,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Falha ao fazer login: ${e.toString()}'),
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await _authService.signInWithGoogle();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Falha ao fazer login com o Google: ${e.toString()}'),
@@ -76,7 +78,9 @@ class _LoginScreenState extends State<LoginScreen> {
             return Center(
               child: SingleChildScrollView(
                 padding: EdgeInsets.symmetric(
-                  horizontal: constraints.maxWidth > 600 ? constraints.maxWidth * 0.2 : 24.0,
+                  horizontal: constraints.maxWidth > 600
+                      ? constraints.maxWidth * 0.2
+                      : 24.0,
                   vertical: 24.0,
                 ),
                 child: ConstrainedBox(
@@ -148,10 +152,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: _signInWithGoogle,
-                        icon: FaIcon(FontAwesomeIcons.google, color: Theme.of(context).colorScheme.onError),
+                        icon: FaIcon(FontAwesomeIcons.google,
+                            color: Theme.of(context).colorScheme.onError),
                         label: const Text('Entrar com Google'),
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.onError,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onError,
                           backgroundColor: Theme.of(context).colorScheme.error,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),

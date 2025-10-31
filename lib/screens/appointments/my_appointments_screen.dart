@@ -52,8 +52,10 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             itemCount: appointments.length,
             itemBuilder: (context, index) {
               final appointment = appointments[index];
-              final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
-              final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
+              final formattedDate =
+                  DateFormat('dd/MM/yyyy').format(appointment.startTime);
+              final formattedTime =
+                  DateFormat('HH:mm').format(appointment.startTime);
 
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -35,8 +35,6 @@ class AuthService {
       // Once signed in, return the UserCredential
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      // Using print for debugging, should be replaced with a logger in production
-      print(e);
       return null;
     }
   }
@@ -47,7 +45,7 @@ class AuthService {
       await GoogleSignIn().signOut();
       await _auth.signOut();
     } catch (e) {
-      print(e);
+      // Handle error, e.g., by logging it
     }
   }
 }

@@ -25,7 +25,8 @@ class FirestoreService {
 
     return _db
         .collection('appointments')
-        .where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('startTime',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('startTime', isLessThan: Timestamp.fromDate(endOfDay))
         .snapshots();
   }

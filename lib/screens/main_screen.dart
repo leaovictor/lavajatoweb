@@ -39,14 +39,18 @@ class _MainScreenState extends State<MainScreen> {
                 icon: Icon(
                   themeNotifier.themeMode == ThemeMode.light
                       ? Icons.dark_mode
-                      : Icons.light_mode,
+                      : themeNotifier.themeMode == ThemeMode.dark
+                          ? Icons.light_mode
+                          : Icons.brightness_auto,
                 ),
                 onPressed: () {
-                  themeNotifier.setThemeMode(
-                    themeNotifier.themeMode == ThemeMode.light
-                        ? ThemeMode.dark
-                        : ThemeMode.light,
-                  );
+                  if (themeNotifier.themeMode == ThemeMode.light) {
+                    themeNotifier.setThemeMode(ThemeMode.dark);
+                  } else if (themeNotifier.themeMode == ThemeMode.dark) {
+                    themeNotifier.setThemeMode(ThemeMode.system);
+                  } else {
+                    themeNotifier.setThemeMode(ThemeMode.light);
+                  }
                 },
                 tooltip: 'Mudar tema',
               );
