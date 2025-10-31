@@ -68,8 +68,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                         ? Icons.check_circle
                         : Icons.history,
                     color: appointment.startTime.isBefore(DateTime.now())
-                        ? Colors.green
-                        : Colors.blue,
+                        ? Theme.of(context).colorScheme.secondary
+                        : Theme.of(context).colorScheme.primary,
                   ),
                 ),
               );

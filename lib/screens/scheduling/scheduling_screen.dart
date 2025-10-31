@@ -68,9 +68,9 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Agendamento confirmado com sucesso!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Agendamento confirmado com sucesso!'),
+            backgroundColor: Theme.of(context).colorScheme.secondary,
           ),
         );
         Navigator.of(context).pop();
@@ -156,13 +156,13 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                   selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                   calendarFormat: _calendarFormat,
                   startingDayOfWeek: StartingDayOfWeek.monday,
-                  calendarStyle: const CalendarStyle(
+                  calendarStyle: CalendarStyle(
                     todayDecoration: BoxDecoration(
-                      color: Colors.blueAccent,
+                      color: Theme.of(context).colorScheme.secondary,
                       shape: BoxShape.circle,
                     ),
                     selectedDecoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: Theme.of(context).colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                   ),

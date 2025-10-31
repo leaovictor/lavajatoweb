@@ -148,11 +148,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         onPressed: _signInWithGoogle,
-                        icon: const FaIcon(FontAwesomeIcons.google, color: Colors.white),
+                        icon: const FaIcon(FontAwesomeIcons.google, color: Colors.white), // TODO: Use theme.colorScheme.onError
                         label: const Text('Entrar com Google'),
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white, // TODO: Use theme.colorScheme.onError
+                          backgroundColor: Theme.of(context).colorScheme.error,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
