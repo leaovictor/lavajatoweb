@@ -227,16 +227,19 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                                 'Nenhum horário disponível para este dia.'));
                       }
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          childAspectRatio: 2.5,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                        ),
-                        itemCount: availableSlots.length,
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final crossAxisCount = (constraints.maxWidth / 150).floor().clamp(2, 6);
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: 2.5,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                            ),
+                            itemCount: availableSlots.length,
                         itemBuilder: (context, index) {
                           final time = availableSlots[index];
                           final isSelected = _selectedTime == time;
@@ -249,6 +252,8 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                               });
                             },
                           );
+                        },
+                      );
                         },
                       );
                     },
