@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:lavajato/screens/admin/admin_dashboard_screen.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
 import 'package:lavajato/screens/subscription/subscription_screen.dart';
@@ -14,6 +16,8 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   final AuthService _authService = AuthService();
+  final bool _isAdmin =
+      FirebaseAuth.instance.currentUser?.email == 'admin@lavajato.com';
 
   void _onItemTapped(int index) {
     setState(() {
@@ -27,12 +31,14 @@ class _MainScreenState extends State<MainScreen> {
       const HomeScreen(),
       const MyAppointmentsScreen(),
       const SubscriptionScreen(),
+      if (_isAdmin) const AdminDashboardScreen(),
     ];
 
     final List<String> titles = [
       'Serviços',
       'Meus Agendamentos',
       'Assinatura',
+      if (_isAdmin) 'Admin',
     ];
 
     return Scaffold(
@@ -76,6 +82,11 @@ class _MainScreenState extends State<MainScreen> {
                       icon: Icon(Icons.star),
                       label: Text('Assinatura'),
                     ),
+                    if (_isAdmin)
+                      const NavigationRailDestination(
+                        icon: Icon(Icons.admin_panel_settings),
+                        label: Text('Admin'),
+                      ),
                   ],
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
@@ -104,6 +115,11 @@ class _MainScreenState extends State<MainScreen> {
                   icon: Icon(Icons.star),
                   label: 'Assinatura',
                 ),
+                if (_isAdmin)
+                  const BottomNavigationBarItem(
+                    icon: Icon(Icons.admin_panel_settings),
+                    label: 'Admin',
+                  ),
               ],
               currentIndex: _selectedIndex,
               onTap: _onItemTapped,

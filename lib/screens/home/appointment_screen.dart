@@ -61,7 +61,13 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
       clienteId: user.uid,
       serviceName: widget.service.name,
       data: _selectedDay!,
-      hora: _selectedTime!.format(context),
+      hora: DateTime(
+        _selectedDay!.year,
+        _selectedDay!.month,
+        _selectedDay!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      ),
       status: 'pendente',
     );
 

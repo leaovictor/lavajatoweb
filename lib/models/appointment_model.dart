@@ -5,7 +5,7 @@ class Appointment {
   final String clienteId;
   final String serviceName;
   final DateTime data;
-  final String hora;
+  final DateTime hora;
   final String status;
 
   Appointment({
@@ -24,7 +24,7 @@ class Appointment {
       clienteId: data['clienteId'] ?? '',
       serviceName: data['serviceName'] ?? '',
       data: (data['data'] as Timestamp).toDate(),
-      hora: data['hora'] ?? '',
+      hora: (data['hora'] as Timestamp).toDate(),
       status: data['status'] ?? 'pendente',
     );
   }
@@ -34,7 +34,7 @@ class Appointment {
       'clienteId': clienteId,
       'serviceName': serviceName,
       'data': Timestamp.fromDate(data),
-      'hora': hora,
+      'hora': Timestamp.fromDate(hora),
       'status': status,
     };
   }

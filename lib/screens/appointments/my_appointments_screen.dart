@@ -119,6 +119,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             final appointment = appointments[index];
             final formattedDate =
                 DateFormat('dd/MM/yyyy').format(appointment.data);
+            final formattedTime = DateFormat('HH:mm').format(appointment.hora);
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: ListTile(
@@ -126,7 +127,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   appointment.serviceName,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text('Em $formattedDate às ${appointment.hora}'),
+                subtitle: Text('Em $formattedDate às $formattedTime'),
                 trailing: Text(appointment.status),
               ),
             );
