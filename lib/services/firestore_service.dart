@@ -27,4 +27,18 @@ class FirestoreService {
       // Handle errors appropriately
     }
   }
+
+  Stream<List<Appointment>> getAppointmentsForDay(DateTime day) {
+    Timestamp startOfDay = Timestamp.fromDate(DateTime(day.year, day.month, day.day));
+    Timestamp endOfDay = Timestamp.fromDate(DateTime(day.year, day.month, day.day, 23, 59, 59));
+
+    return _db
+        .collection('agendamentos')
+        .where('data', isGreaterThanOrEqualTo: startOfDay)
+        .where('data', isLessThanOrEqualTo: endOfDay)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Appointment.fromFirestore(doc))
+            .toList());
+  }
 }

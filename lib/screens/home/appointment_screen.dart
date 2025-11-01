@@ -6,16 +6,16 @@ import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-class SchedulingScreen extends StatefulWidget {
+class AppointmentScreen extends StatefulWidget {
   final Service service;
 
-  const SchedulingScreen({super.key, required this.service});
+  const AppointmentScreen({super.key, required this.service});
 
   @override
-  State<SchedulingScreen> createState() => _SchedulingScreenState();
+  State<AppointmentScreen> createState() => _AppointmentScreenState();
 }
 
-class _SchedulingScreenState extends State<SchedulingScreen> {
+class _AppointmentScreenState extends State<AppointmentScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
