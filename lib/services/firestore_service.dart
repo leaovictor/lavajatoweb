@@ -41,4 +41,15 @@ class FirestoreService {
             .map((doc) => Appointment.fromFirestore(doc))
             .toList());
   }
+
+  Future<void> updateUserSubscriptionStatus(String uid, String status) async {
+    try {
+      await _db.collection('clientes').doc(uid).update({
+        'subscriptionStatus': status,
+      });
+    } catch (e) {
+      print(e);
+      // Handle errors appropriately
+    }
+  }
 }

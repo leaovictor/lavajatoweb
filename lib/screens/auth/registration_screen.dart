@@ -135,18 +135,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       final authService = AuthService();
                       final userCredential =
                           await authService.signUpWithEmailPassword(
+                        _nameController.text,
                         _emailController.text,
+                        _phoneController.text,
                         _passwordController.text,
                       );
-                      if (userCredential != null) {
-                        final firestoreService = FirestoreService();
-                        await firestoreService.addUser(
-                          userCredential.user!.uid,
-                          _nameController.text,
-                          _emailController.text,
-                          _phoneController.text,
-                        );
-                      } else {
+                      if (userCredential == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(

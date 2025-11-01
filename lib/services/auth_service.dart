@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:lavajato/services/firestore_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirestoreService _firestoreService = FirestoreService();
 
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
@@ -45,12 +47,17 @@ class AuthService {
 
   // Sign up with email and password
   Future<UserCredential?> signUpWithEmailPassword(
-      String email, String password) async {
+      String name, String email, String phone, String password) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      if (userCredential.user != null) {
+        await _firestoreService.addUser(
+            userCredential.user!.uid, name, email, phone);
+      }
+      return userCredential;
     } catch (e) {
       print(e);
       return null;

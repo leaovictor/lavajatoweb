@@ -1,7 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lavajato/services/auth_gate.dart';
+import 'package:lavajato/stripe_keys.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +13,11 @@ void main() async {
   await Firebase.initializeApp(
       // options: DefaultFirebaseOptions.currentPlatform,
       );
+
+  // Initialize Stripe
+  Stripe.publishableKey = stripePublishableKey;
+  await Stripe.instance.applySettings();
+
   runApp(const MyApp());
 }
 
