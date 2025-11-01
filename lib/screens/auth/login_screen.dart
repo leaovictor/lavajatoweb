@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:lavajato/screens/auth/registration_screen.dart';
 import 'package:lavajato/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,6 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -29,10 +31,12 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
                 // App Logo/Title
                 Icon(
                   Icons.local_car_wash,
@@ -56,6 +60,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.email),
                   ),
                   keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    if (value == null || !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Por favor, insira um email válido.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
 
@@ -68,25 +78,59 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.lock),
                   ),
                   obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, insira sua senha.';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 24),
 
                 // Login Button
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: Implement email/password login
+                  onPressed: () async {
+                    if (_formKey.currentState!.validate()) {
+                      final authService = AuthService();
+                      final userCredential =
+                          await authService.signInWithEmailPassword(
+                        _emailController.text,
+                        _passwordController.text,
+                      );
+                      if (userCredential == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'Email ou senha incorretos. Tente novamente.'),
+                          ),
+                        );
+                      }
+                      // AuthGate will handle navigation
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: const Text('Entrar'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
+
+                // Forgot Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => _showPasswordResetDialog(),
+                    child: const Text('Esqueceu a senha?'),
+                  ),
+                ),
+                const SizedBox(height: 8),
 
                 // Sign Up Button
                 TextButton(
                   onPressed: () {
-                    // TODO: Navigate to registration screen
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const RegistrationScreen(),
+                    ));
                   },
                   child: const Text('Não tem uma conta? Cadastre-se'),
                 ),
@@ -116,10 +160,54 @@ class _LoginScreenState extends State<LoginScreen> {
                 //     padding: const EdgeInsets.symmetric(vertical: 12),
                 //   ),
                 // ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showPasswordResetDialog() {
+    final TextEditingController emailController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Redefinir senha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+                'Digite seu email para receber um link de redefinição de senha.'),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (emailController.text.isNotEmpty) {
+                _authService.sendPasswordResetEmail(emailController.text);
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Se o email estiver correto, um link para redefinir a senha será enviado.'),
+                  ),
+                );
+              }
+            },
+            child: const Text('Enviar'),
+          ),
+        ],
       ),
     );
   }

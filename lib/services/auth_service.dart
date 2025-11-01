@@ -42,4 +42,41 @@ class AuthService {
       print(e);
     }
   }
+
+  // Sign up with email and password
+  Future<UserCredential?> signUpWithEmailPassword(
+      String email, String password) async {
+    try {
+      return await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  // Sign in with email and password
+  Future<UserCredential?> signInWithEmailPassword(
+      String email, String password) async {
+    try {
+      return await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      print(e);
+    }
+  }
 }
