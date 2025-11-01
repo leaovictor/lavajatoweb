@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:lavajato/models/client_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/services/notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService();
 
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
@@ -56,6 +59,13 @@ class AuthService {
       if (userCredential.user != null) {
         await _firestoreService.addUser(
             userCredential.user!.uid, name, email, phone);
+        final client = Client(
+          uid: userCredential.user!.uid,
+          name: name,
+          email: email,
+          phone: phone,
+        );
+        await _notificationService.sendRegistrationConfirmation(client);
       }
       return userCredential;
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/services/notification_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class AppointmentScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class AppointmentScreen extends StatefulWidget {
 
 class _AppointmentScreenState extends State<AppointmentScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService();
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   TimeOfDay? _selectedTime;
@@ -64,7 +66,8 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
     );
 
     try {
-      await _firestoreService.addAppointment(appointment.toMap());
+      await _firestoreService.addAppointment(appointment);
+      await _notificationService.sendAppointmentConfirmation(appointment);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

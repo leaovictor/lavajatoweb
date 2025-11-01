@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/stripe_keys.dart';
 
 class SubscriptionScreen extends StatelessWidget {
   const SubscriptionScreen({super.key});
@@ -50,8 +51,7 @@ class SubscriptionScreen extends StatelessWidget {
     // para criar a intenção de pagamento e retornar o `clientSecret` para o app.
 
     // 1. Create a payment intent (simulated backend call)
-    final clientSecret =
-        'pi_3JgQYgF1a1a1a1a1a1a1a1a1_secret_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1';
+    const clientSecret = stripeClientSecret;
 
     try {
       // 2. Initialize the payment sheet
