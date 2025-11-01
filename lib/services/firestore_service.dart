@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lavajato/models/appointment_model.dart';
+import 'package:lavajato/models/client_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -51,5 +52,28 @@ class FirestoreService {
       print(e);
       // Handle errors appropriately
     }
+  }
+
+  Stream<Client> getUser(String uid) {
+    return _db
+        .collection('clientes')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => Client.fromFirestore(doc));
+  }
+
+  Stream<List<Appointment>> getMyAppointments(String uid) {
+    return _db
+        .collection('agendamentos')
+        .where('clienteId', isEqualTo: uid)
+        .orderBy('data', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Appointment.fromFirestore(doc))
+            .toList());
+  }
+
+  Stream<QuerySnapshot> getServices() {
+    return _db.collection('servicos').snapshots();
   }
 }

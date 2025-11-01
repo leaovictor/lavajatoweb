@@ -56,11 +56,11 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
 
     final appointment = Appointment(
       id: '', // Firestore will generate this
-      userId: user.uid,
-      serviceId: widget.service.id,
+      clienteId: user.uid,
       serviceName: widget.service.name,
-      startTime: startTime,
-      endTime: endTime,
+      data: _selectedDay!,
+      hora: _selectedTime!.format(context),
+      status: 'pendente',
     );
 
     try {

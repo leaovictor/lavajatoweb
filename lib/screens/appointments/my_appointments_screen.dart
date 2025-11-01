@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/appointment_model.dart';
+import 'package:lavajato/models/client_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
@@ -24,53 +25,114 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
       );
     }
 
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getMyAppointments(_user.uid),
+    return Column(
+      children: [
+        _buildSubscriptionStatus(),
+        Expanded(
+          child: StreamBuilder<List<Appointment>>(
+            stream: _firestoreService.getMyAppointments(_user!.uid),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return const Center(
+                    child: Text('Erro ao carregar agendamentos.'));
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(
+                    child: Text('Você não possui agendamentos.'));
+              }
+
+              final now = DateTime.now();
+              final upcoming = snapshot.data!
+                  .where((a) => a.data.isAfter(now))
+                  .toList();
+              final past = snapshot.data!
+                  .where((a) => a.data.isBefore(now))
+                  .toList();
+
+              return ListView(
+                children: [
+                  if (upcoming.isNotEmpty)
+                    _buildAppointmentList('Próximas Reservas', upcoming),
+                  if (past.isNotEmpty)
+                    _buildAppointmentList('Histórico', past),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionStatus() {
+    return StreamBuilder<Client>(
+      stream: _firestoreService.getUser(_user!.uid),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Erro ao carregar agendamentos.'));
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
         }
+        final client = snapshot.data!;
+        final status = client.subscriptionStatus ?? 'inativa';
+        return Card(
+          margin: const EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                const Icon(Icons.star, color: Colors.amber),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    'Status da Assinatura: ${status.toUpperCase()}',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('Você não possui agendamentos.'));
-        }
-
-        final appointments = snapshot.data!.docs
-            .map((doc) => Appointment.fromFirestore(doc))
-            .toList();
-
-        return ListView.builder(
+  Widget _buildAppointmentList(String title, List<Appointment> appointments) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: appointments.length,
           itemBuilder: (context, index) {
             final appointment = appointments[index];
-            final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
-            final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
-
+            final formattedDate =
+                DateFormat('dd/MM/yyyy').format(appointment.data);
             return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: ListTile(
                 title: Text(
                   appointment.serviceName,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text('Em $formattedDate às $formattedTime'),
-                leading: Icon(
-                  appointment.startTime.isBefore(DateTime.now())
-                      ? Icons.check_circle
-                      : Icons.history,
-                  color: appointment.startTime.isBefore(DateTime.now())
-                      ? Colors.green
-                      : Colors.blue,
-                ),
+                subtitle: Text('Em $formattedDate às ${appointment.hora}'),
+                trailing: Text(appointment.status),
               ),
             );
           },
-        );
-      },
+        ),
+      ],
     );
   }
 }
