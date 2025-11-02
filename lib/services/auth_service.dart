@@ -1,3 +1,4 @@
+import 'package:lavajato/services/auth_result.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lavajato/models/client_model.dart';
@@ -10,46 +11,47 @@ class AuthService {
   final NotificationService _notificationService = NotificationService();
 
   // Sign in with Google
-  Future<UserCredential?> signInWithGoogle() async {
+  Future<AuthResult> signInWithGoogle() async {
     try {
       // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
 
       if (googleUser == null) {
         // The user canceled the sign-in
-        return null;
+        return AuthResult(errorMessage: 'Login com Google cancelado.');
       }
 
       // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication as GoogleSignInAuthentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
       // Create a new credential for Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        accessToken: (googleAuth as dynamic).accessToken,
+        idToken: (googleAuth as dynamic).idToken,
       );
 
       // Once signed in, return the UserCredential
-      return await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+      return AuthResult(userCredential: userCredential);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult(errorMessage: e.message);
     } catch (e) {
-      // Using print for debugging, should be replaced with a logger in production
-      print(e);
-      return null;
+      return AuthResult(errorMessage: 'Ocorreu um erro desconhecido.');
     }
   }
 
   // Sign out
   Future<void> signOut() async {
     try {
-      await GoogleSignIn().signOut();
+      await GoogleSignIn.instance.signOut();
       await _auth.signOut();
     } catch (e) {
-      print(e);
+      // Handle errors appropriately
     }
   }
 
   // Sign up with email and password
-  Future<UserCredential?> signUpWithEmailPassword(
+  Future<AuthResult> signUpWithEmailPassword(
       String name, String email, String phone, String password) async {
     try {
       final userCredential = await _auth.createUserWithEmailAndPassword(
@@ -58,7 +60,7 @@ class AuthService {
       );
       if (userCredential.user != null) {
         await _firestoreService.addUser(
-            userCredential.user!.uid, name, email, phone);
+            userCredential.user!.uid, name, email, phone, rule: 'usuario');
         final client = Client(
           uid: userCredential.user!.uid,
           name: name,
@@ -67,24 +69,29 @@ class AuthService {
         );
         await _notificationService.sendRegistrationConfirmation(client);
       }
-      return userCredential;
+      return AuthResult(userCredential: userCredential);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult(errorMessage: e.message);
     } catch (e) {
-      print(e);
-      return null;
+      return AuthResult(errorMessage: 'Ocorreu um erro desconhecido.');
     }
   }
 
+
+
   // Sign in with email and password
-  Future<UserCredential?> signInWithEmailPassword(
+  Future<AuthResult> signInWithEmailPassword(
       String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      return AuthResult(userCredential: userCredential);
+    } on FirebaseAuthException catch (e) {
+      return AuthResult(errorMessage: e.message);
     } catch (e) {
-      print(e);
-      return null;
+      return AuthResult(errorMessage: 'Ocorreu um erro desconhecido.');
     }
   }
 
@@ -93,7 +100,7 @@ class AuthService {
     try {
       await _auth.sendPasswordResetEmail(email: email);
     } catch (e) {
-      print(e);
+      // Handle errors appropriately
     }
   }
 }

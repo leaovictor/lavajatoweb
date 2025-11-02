@@ -7,6 +7,7 @@ class Appointment {
   final DateTime data;
   final DateTime hora;
   final String status;
+  final int duration; // Add duration field
 
   Appointment({
     required this.id,
@@ -15,6 +16,7 @@ class Appointment {
     required this.data,
     required this.hora,
     required this.status,
+    required this.duration, // Add to constructor
   });
 
   factory Appointment.fromFirestore(DocumentSnapshot doc) {
@@ -23,9 +25,10 @@ class Appointment {
       id: doc.id,
       clienteId: data['clienteId'] ?? '',
       serviceName: data['serviceName'] ?? '',
-      data: (data['data'] as Timestamp).toDate(),
-      hora: (data['hora'] as Timestamp).toDate(),
+      data: data['data'] != null ? (data['data'] as Timestamp).toDate() : DateTime.now(),
+      hora: data['hora'] != null ? (data['hora'] as Timestamp).toDate() : DateTime.now(),
       status: data['status'] ?? 'pendente',
+      duration: data['duration'] ?? 0, // Add duration from firestore
     );
   }
 
@@ -36,6 +39,7 @@ class Appointment {
       'data': Timestamp.fromDate(data),
       'hora': Timestamp.fromDate(hora),
       'status': status,
+      'duration': duration, // Add duration to map
     };
   }
 }

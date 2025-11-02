@@ -54,8 +54,6 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
       _selectedTime!.minute,
     );
 
-    final endTime = startTime.add(Duration(minutes: widget.service.duration));
-
     final appointment = Appointment(
       id: '', // Firestore will generate this
       clienteId: user.uid,
@@ -69,6 +67,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
         _selectedTime!.minute,
       ),
       status: 'pendente',
+      duration: widget.service.duration, // Add duration
     );
 
     try {
@@ -112,8 +111,19 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
     DateTime potentialSlot = DateTime(
         _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, openingHour);
 
+    final now = DateTime.now(); // Get current time
+
     while (potentialSlot.hour < closingHour) {
       final potentialSlotTimeOfDay = TimeOfDay.fromDateTime(potentialSlot);
+
+      // Filter out past time slots
+      if (_selectedDay!.day == now.day &&
+          _selectedDay!.month == now.month &&
+          _selectedDay!.year == now.year &&
+          potentialSlot.isBefore(now)) {
+        potentialSlot = potentialSlot.add(const Duration(minutes: 30));
+        continue;
+      }
 
       if (potentialSlotTimeOfDay.hour >= lunchStart &&
           potentialSlotTimeOfDay.hour < lunchEnd) {
@@ -126,8 +136,17 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
 
       bool hasConflict = false;
       for (final booked in bookedAppointments) {
-        if (potentialSlot.isBefore(booked.endTime) &&
-            potentialSlotEnd.isAfter(booked.startTime)) {
+        final bookedStartTime = DateTime(
+          booked.data.year,
+          booked.data.month,
+          booked.data.day,
+          booked.hora.hour,
+          booked.hora.minute,
+        );
+        final bookedEndTime = bookedStartTime.add(Duration(minutes: booked.duration));
+
+        if (potentialSlot.isBefore(bookedEndTime) &&
+            potentialSlotEnd.isAfter(bookedStartTime)) {
           hasConflict = true;
           break;
         }
@@ -202,9 +221,15 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                   ),
                 ),
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: _firestoreService.getAppointmentsForDay(_selectedDay!),
+                  child: StreamBuilder<List<Appointment>>(
+                    stream: _selectedDay == null
+                        ? null
+                        : _firestoreService.getAppointmentsForDay(_selectedDay!),
                     builder: (context, snapshot) {
+                      if (_selectedDay == null) {
+                        return const Center(
+                            child: Text('Selecione um dia para ver os horários disponíveis.'));
+                      }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
@@ -213,10 +238,7 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
                             child: Text('Erro ao carregar horários.'));
                       }
 
-                      final bookedAppointments = snapshot.data?.docs
-                              .map((doc) => Appointment.fromFirestore(doc))
-                              .toList() ??
-                          [];
+                      final bookedAppointments = snapshot.data ?? [];
 
                       final availableSlots =
                           _generateAvailableTimeSlots(bookedAppointments);

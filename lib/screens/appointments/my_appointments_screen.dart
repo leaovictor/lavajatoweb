@@ -33,6 +33,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             stream: _firestoreService.getMyAppointments(_user!.uid),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
+                print(snapshot.error);
                 return const Center(
                     child: Text('Erro ao carregar agendamentos.'));
               }
@@ -48,10 +49,10 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
 
               final now = DateTime.now();
               final upcoming = snapshot.data!
-                  .where((a) => a.data.isAfter(now))
+                  .where((a) => a.hora.isAfter(now))
                   .toList();
               final past = snapshot.data!
-                  .where((a) => a.data.isBefore(now))
+                  .where((a) => a.hora.isBefore(now))
                   .toList();
 
               return ListView(

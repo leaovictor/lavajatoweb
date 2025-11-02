@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/services/auth_gate.dart';
 import 'package:lavajato/stripe_keys.dart';
 
@@ -11,8 +13,8 @@ void main() async {
   // You can generate the configuration file by following the instructions here:
   // https://firebase.google.com/docs/flutter/setup
   await Firebase.initializeApp(
-      // options: DefaultFirebaseOptions.currentPlatform,
-      );
+    options: kIsWeb ? DefaultFirebaseOptions.web : DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Initialize Stripe
   Stripe.publishableKey = stripePublishableKey;

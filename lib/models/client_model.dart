@@ -6,6 +6,7 @@ class Client {
   final String email;
   final String phone;
   final String? subscriptionStatus;
+  final String rule;
 
   Client({
     required this.uid,
@@ -13,6 +14,7 @@ class Client {
     required this.email,
     required this.phone,
     this.subscriptionStatus,
+    this.rule = 'usuario',
   });
 
   factory Client.fromFirestore(DocumentSnapshot doc) {
@@ -23,6 +25,7 @@ class Client {
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
       subscriptionStatus: data['subscriptionStatus'],
+      rule: data['rule'] ?? 'usuario',
     );
   }
 }
