@@ -20,9 +20,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _handleSubscription(BuildContext context, String plan) async {
     try {
       // 1. (SIMULADO) Cria a intenção de pagamento no backend
-      // Em um app real, esta função faria uma chamada de rede para o seu servidor.
-      // O servidor, usando a chave SECRETA do Stripe, criaria uma PaymentIntent
-      // e retornaria o clientSecret para o app.
       final paymentIntent = await _createPaymentIntent(plan);
       final clientSecret = paymentIntent?['clientSecret'];
 
@@ -32,14 +29,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
       // 2. Executa o fluxo de pagamento específico da plataforma
       if (kIsWeb) {
-        // Para a Web, usamos o CardField, pois a PaymentSheet não é suportada.
         await _handleWebAppPayment(context, clientSecret, plan);
       } else {
-        // Para Mobile (iOS/Android), usamos a PaymentSheet para uma melhor UX.
         await _handleMobileAppPayment(context, clientSecret, plan);
       }
     } on Exception catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
       );
@@ -57,8 +52,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           title: const Text('Pagamento via Web (Simulado)'),
           content: CardField(
             controller: controller,
-            decoration: InputDecoration(
-              border: const OutlineInputBorder(),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
               labelText: 'Dados do Cartão',
               hintText: 'Use o cartão de teste 4242...',
             ),
@@ -71,9 +66,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (controller.complete) {
-                  // 3. (SIMULADO) Confirma o pagamento com os dados do cartão
-                  // Em um app real, você chamaria `Stripe.instance.confirmPayment`
-                  // para finalizar a transação. Aqui, simulamos o sucesso.
+                  // 3. Confirma o pagamento com os dados do cartão
+                  await Stripe.instance.confirmPayment(
+                    paymentIntentClientSecret: clientSecret,
+                    data: const PaymentMethodParams.card(
+                      paymentMethodData: PaymentMethodData(),
+                    ),
+                  );
                   await _onPaymentSuccess(context, plan);
                   if (dialogContext.mounted) Navigator.of(dialogContext).pop();
                 } else {
@@ -125,9 +124,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   // (SIMULADO) Função que representa a chamada ao seu backend
   Future<Map<String, dynamic>?> _createPaymentIntent(String plan) async {
-    // Em um app real, aqui você faria uma chamada HTTP (POST) para o seu servidor.
-    // O servidor se comunicaria com a API da Stripe para criar uma PaymentIntent
-    // com o valor correto e retornaria o `clientSecret`.
     final Map<String, int> prices = {
       'basic': 2990,
       'premium': 5990,
@@ -135,7 +131,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final amount = prices[plan];
     if (amount == null) return null;
 
-    // Retornamos o `paymentIntentClientSecret` de teste do arquivo `stripe_keys.dart`.
     return {
       'clientSecret': paymentIntentClientSecret,
       'amount': amount,
@@ -152,10 +147,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         padding: const EdgeInsets.all(16.0),
         children: [
           _buildSubscriptionCard(
-            context,
+            context: context,
             title: 'Plano Básico',
             price: 'R\$ 29,90/mês',
-            features: [
+            features: const [
               '1 lavagem simples por mês',
               'Acesso a agendamentos online',
             ],
@@ -163,10 +158,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: 16),
           _buildSubscriptionCard(
-            context,
+            context: context,
             title: 'Plano Premium',
             price: 'R\$ 59,90/mês',
-            features: [
+            features: const [
               '2 lavagens completas por mês',
               'Enceramento incluso',
               'Acesso prioritário a agendamentos',
