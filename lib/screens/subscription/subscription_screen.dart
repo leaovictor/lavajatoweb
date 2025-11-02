@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
 import 'package:lavajato/services/firestore_service.dart';
@@ -97,22 +98,36 @@ class SubscriptionScreen extends StatelessWidget {
         // ATENÇÃO: A implementação a seguir é uma SIMULAÇÃO.
         // Em um aplicativo de produção, o `clientSecret` da intenção de pagamento
         // deve ser buscado de um backend seguro. Não deve ser fixo no código.
-        // O backend seria responsável por se comunicar com a API da Stripe
-        // para criar a intenção de pagamento e retornar o `clientSecret` para o app.
     
-        // 1. Create a payment intent (simulated backend call)
-        final paymentIntent = await _createPaymentIntent(plan);
-    
-        if (paymentIntent == null) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erro ao iniciar o pagamento.')),
-          );
+        // Para a Web, a Payment Sheet não é suportada. Simula um pagamento bem-sucedido.
+        if (kIsWeb) {
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              await FirestoreService()
+                  .updateUserSubscriptionStatus(user.uid, 'active', plan);
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Assinatura (simulada) ativada com sucesso!')),
+              );
+            }
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Ocorreu um erro ao simular o pagamento: $e')),
+            );
+          }
           return;
         }
     
+        // Lógica para Mobile (iOS/Android)
         try {
-          // 2. Initialize the payment sheet
+          final paymentIntent = await _createPaymentIntent(plan);
+          if (paymentIntent == null || paymentIntent['clientSecret'] == null) {
+            throw Exception('Falha ao criar a intenção de pagamento.');
+          }
+
           await Stripe.instance.initPaymentSheet(
             paymentSheetParameters: SetupPaymentSheetParameters(
               paymentIntentClientSecret: paymentIntent['clientSecret'],
@@ -120,58 +135,40 @@ class SubscriptionScreen extends StatelessWidget {
             ),
           );
     
-          // 3. Present the payment sheet
           await Stripe.instance.presentPaymentSheet();
-    
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pagamento concluído com sucesso!')),
-          );
     
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
             await FirestoreService()
                 .updateUserSubscriptionStatus(user.uid, 'active', plan);
           }
+
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pagamento concluído com sucesso!')),
+          );
         } on Exception catch (e) {
           if (!context.mounted) return;
-          if (e is StripeException) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Erro do Stripe: ${e.error.localizedMessage}'),
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Ocorreu um erro: $e')),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
+          );
         }
       }
     
       // Simulated backend function
       Future<Map<String, dynamic>?> _createPaymentIntent(String plan) async {
-        // In a real app, you'd make a network request to your backend here.
-        // The backend would create a payment intent with the correct amount.
-        // For this simulation, we'll just return a dummy secret.
+        // Em um app real, isso seria uma chamada de rede para o seu backend.
         final Map<String, int> prices = {
           'basic': 2990, // R$ 29,90
           'premium': 5990, // R$ 59,90
         };
     
         final amount = prices[plan];
+        if (amount == null) return null;
     
-        if (amount == null) {
-          return null;
-        }
-    
-        // This is a simplified simulation. In a real app, you would make a
-        // POST request to your backend with the plan and amount, and your backend
-        // would create a payment intent and return the client secret.
-    
+        // Retorna o segredo do cliente de teste para a simulação no celular.
         return {
-          // NOTE: This is a dummy client secret for simulation purposes.
-          // In a real application, this would be a unique secret generated by your backend.
+          'clientSecret': paymentIntentClientSecret,
           'amount': amount,
         };
       }
