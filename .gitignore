@@ -46,3 +46,4 @@ app.*.map.json
 
 # Secret files
 /lib/stripe_keys.dart
+ lib/screens/subscription/subscription_screen.dart
