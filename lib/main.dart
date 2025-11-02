@@ -16,8 +16,14 @@ void main() async {
   );
 
   // 2. Initialize Stripe
+  // Set the publishable key for all platforms.
   Stripe.publishableKey = stripePublishableKey;
-  await Stripe.instance.applySettings();
+
+  // The `applySettings` method is only available on mobile/desktop and will
+  // crash on Flutter Web. We use a conditional check to avoid this.
+  if (!kIsWeb) {
+    await Stripe.instance.applySettings();
+  }
   
   // NOTE FOR WEB: On Flutter Web, the Stripe keys should also be configured 
   // by ensuring the Stripe SDK is loaded via a <script> tag in your index.html file.
