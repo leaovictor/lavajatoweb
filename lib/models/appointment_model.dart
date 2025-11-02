@@ -2,42 +2,44 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Appointment {
   final String id;
-  final String userId;
-  final String serviceId;
+  final String clienteId;
   final String serviceName;
-  final DateTime startTime;
-  final DateTime endTime;
+  final DateTime data;
+  final DateTime hora;
+  final String status;
+  final int duration; // Add duration field
 
   Appointment({
     required this.id,
-    required this.userId,
-    required this.serviceId,
+    required this.clienteId,
     required this.serviceName,
-    required this.startTime,
-    required this.endTime,
+    required this.data,
+    required this.hora,
+    required this.status,
+    required this.duration, // Add to constructor
   });
 
-  // Factory constructor to create an Appointment from a map (e.g., from Firestore)
   factory Appointment.fromFirestore(DocumentSnapshot doc) {
     Map data = doc.data() as Map<String, dynamic>;
     return Appointment(
       id: doc.id,
-      userId: data['userId'],
-      serviceId: data['serviceId'],
-      serviceName: data['serviceName'],
-      startTime: (data['startTime'] as Timestamp).toDate(),
-      endTime: (data['endTime'] as Timestamp).toDate(),
+      clienteId: data['clienteId'] ?? '',
+      serviceName: data['serviceName'] ?? '',
+      data: data['data'] != null ? (data['data'] as Timestamp).toDate() : DateTime.now(),
+      hora: data['hora'] != null ? (data['hora'] as Timestamp).toDate() : DateTime.now(),
+      status: data['status'] ?? 'pendente',
+      duration: data['duration'] ?? 0, // Add duration from firestore
     );
   }
 
-  // Method to convert an Appointment to a map (e.g., for writing to Firestore)
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
-      'serviceId': serviceId,
+      'clienteId': clienteId,
       'serviceName': serviceName,
-      'startTime': Timestamp.fromDate(startTime),
-      'endTime': Timestamp.fromDate(endTime),
+      'data': Timestamp.fromDate(data),
+      'hora': Timestamp.fromDate(hora),
+      'status': status,
+      'duration': duration, // Add duration to map
     };
   }
 }

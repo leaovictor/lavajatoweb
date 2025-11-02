@@ -4,19 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/services/notification_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-class SchedulingScreen extends StatefulWidget {
+class AppointmentScreen extends StatefulWidget {
   final Service service;
 
-  const SchedulingScreen({super.key, required this.service});
+  const AppointmentScreen({super.key, required this.service});
 
   @override
-  State<SchedulingScreen> createState() => _SchedulingScreenState();
+  State<AppointmentScreen> createState() => _AppointmentScreenState();
 }
 
-class _SchedulingScreenState extends State<SchedulingScreen> {
+class _AppointmentScreenState extends State<AppointmentScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final NotificationService _notificationService = NotificationService();
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   TimeOfDay? _selectedTime;
@@ -52,19 +54,25 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
       _selectedTime!.minute,
     );
 
-    final endTime = startTime.add(Duration(minutes: widget.service.duration));
-
     final appointment = Appointment(
       id: '', // Firestore will generate this
-      userId: user.uid,
-      serviceId: widget.service.id,
+      clienteId: user.uid,
       serviceName: widget.service.name,
-      startTime: startTime,
-      endTime: endTime,
+      data: _selectedDay!,
+      hora: DateTime(
+        _selectedDay!.year,
+        _selectedDay!.month,
+        _selectedDay!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      ),
+      status: 'pendente',
+      duration: widget.service.duration, // Add duration
     );
 
     try {
-      await _firestoreService.addAppointment(appointment.toMap());
+      await _firestoreService.addAppointment(appointment);
+      await _notificationService.sendAppointmentConfirmation(appointment);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,8 +111,19 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
     DateTime potentialSlot = DateTime(
         _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, openingHour);
 
+    final now = DateTime.now(); // Get current time
+
     while (potentialSlot.hour < closingHour) {
       final potentialSlotTimeOfDay = TimeOfDay.fromDateTime(potentialSlot);
+
+      // Filter out past time slots
+      if (_selectedDay!.day == now.day &&
+          _selectedDay!.month == now.month &&
+          _selectedDay!.year == now.year &&
+          potentialSlot.isBefore(now)) {
+        potentialSlot = potentialSlot.add(const Duration(minutes: 30));
+        continue;
+      }
 
       if (potentialSlotTimeOfDay.hour >= lunchStart &&
           potentialSlotTimeOfDay.hour < lunchEnd) {
@@ -117,8 +136,17 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
 
       bool hasConflict = false;
       for (final booked in bookedAppointments) {
-        if (potentialSlot.isBefore(booked.endTime) &&
-            potentialSlotEnd.isAfter(booked.startTime)) {
+        final bookedStartTime = DateTime(
+          booked.data.year,
+          booked.data.month,
+          booked.data.day,
+          booked.hora.hour,
+          booked.hora.minute,
+        );
+        final bookedEndTime = bookedStartTime.add(Duration(minutes: booked.duration));
+
+        if (potentialSlot.isBefore(bookedEndTime) &&
+            potentialSlotEnd.isAfter(bookedStartTime)) {
           hasConflict = true;
           break;
         }
@@ -193,9 +221,15 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                   ),
                 ),
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: _firestoreService.getAppointmentsForDay(_selectedDay!),
+                  child: StreamBuilder<List<Appointment>>(
+                    stream: _selectedDay == null
+                        ? null
+                        : _firestoreService.getAppointmentsForDay(_selectedDay!),
                     builder: (context, snapshot) {
+                      if (_selectedDay == null) {
+                        return const Center(
+                            child: Text('Selecione um dia para ver os horários disponíveis.'));
+                      }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
@@ -204,10 +238,7 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                             child: Text('Erro ao carregar horários.'));
                       }
 
-                      final bookedAppointments = snapshot.data?.docs
-                              .map((doc) => Appointment.fromFirestore(doc))
-                              .toList() ??
-                          [];
+                      final bookedAppointments = snapshot.data ?? [];
 
                       final availableSlots =
                           _generateAvailableTimeSlots(bookedAppointments);
@@ -218,16 +249,19 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                                 'Nenhum horário disponível para este dia.'));
                       }
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          childAspectRatio: 2.5,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                        ),
-                        itemCount: availableSlots.length,
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final crossAxisCount = (constraints.maxWidth / 150).floor().clamp(2, 6);
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              childAspectRatio: 2.5,
+                              mainAxisSpacing: 8,
+                              crossAxisSpacing: 8,
+                            ),
+                            itemCount: availableSlots.length,
                         itemBuilder: (context, index) {
                           final time = availableSlots[index];
                           final isSelected = _selectedTime == time;
@@ -240,6 +274,8 @@ class _SchedulingScreenState extends State<SchedulingScreen> {
                               });
                             },
                           );
+                        },
+                      );
                         },
                       );
                     },

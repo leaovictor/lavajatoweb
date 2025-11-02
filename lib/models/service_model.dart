@@ -4,7 +4,7 @@ class Service {
   final String id;
   final String name;
   final String description;
-  final num price;
+  final double price;
   final int duration;
 
   Service({
@@ -21,8 +21,8 @@ class Service {
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
-      price: data['price'] ?? 0,
-      duration: data['duration'] ?? 60,
+      price: (data['price'] ?? 0.0).toDouble(),
+      duration: data['duration'] ?? 0,
     );
   }
 }
