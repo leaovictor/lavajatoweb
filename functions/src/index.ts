@@ -1,9 +1,12 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as mercadopago from "mercadopago";
+import * as cors from "cors";
 
 admin.initializeApp();
 const db = admin.firestore();
+
+const corsHandler = cors({ origin: true });
 
 // 1. Corrigido: Usar 'token' ao invés de 'accesstoken' para corresponder ao .runtimeconfig.json
 const mpToken = functions.config().mercadopago?.token;
@@ -17,69 +20,80 @@ mercadopago.configure({
   access_token: mpToken,
 });
 
-// 2. Nova Função: Criar preferência de pagamento
-export const createPreference = functions.https.onCall(async (data, context) => {
-  // Autenticação: Garante que o usuário está logado.
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para criar uma preferência de pagamento.");
-  }
-
-  const userId = context.auth.uid;
-  const userEmail = context.auth.token.email;
-  const { planName } = data; // Recebe o nome do plano do app cliente
-
-  if (!planName || !userEmail) {
-    throw new functions.https.HttpsError("invalid-argument", "O nome do plano e o email são obrigatórios.");
-  }
-
-  try {
-    // Busca os detalhes do plano no Firestore
-    const planDoc = await db.collection("plans").doc(planName).get();
-    if (!planDoc.exists) {
-      throw new functions.https.HttpsError("not-found", `Plano '${planName}' não encontrado.`);
-    }
-    const plan = planDoc.data();
-    if (!plan || !plan.price) {
-        throw new functions.https.HttpsError("internal", "Dados do plano são inválidos.");
+// 2. Função Refatorada: Criar preferência de pagamento com CORS
+export const createPreference = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    // Autenticação Manual
+    const idToken = request.headers.authorization?.split("Bearer ")[1];
+    if (!idToken) {
+      response.status(401).send({ error: "Unauthorized" });
+      return;
     }
 
-    // Constrói a URL do webhook dinamicamente
-    const region = "us-central1"; // Ou a região onde sua função está hospedada
-    const projectId = process.env.GCLOUD_PROJECT;
-    const notification_url = `https://${region}-${projectId}.cloudfunctions.net/mercadoPagoWebhook`;
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error("Error verifying Firebase ID token:", error);
+      response.status(401).send({ error: "Unauthorized" });
+      return;
+    }
 
-    const preference = {
-      items: [
-        {
-          title: `Assinatura ${plan.name}`,
-          quantity: 1,
-          currency_id: "BRL",
-          unit_price: plan.price,
+    const userId = decodedToken.uid;
+    const userEmail = decodedToken.email;
+    const { planName } = request.body.data; // Callable functions wrap data in a 'data' object
+
+    if (!planName || !userEmail) {
+      response.status(400).send({ error: "O nome do plano e o email são obrigatórios." });
+      return;
+    }
+
+    try {
+      const planDoc = await db.collection("plans").doc(planName).get();
+      if (!planDoc.exists) {
+        response.status(404).send({ error: `Plano '${planName}' não encontrado.` });
+        return;
+      }
+      const plan = planDoc.data();
+      if (!plan || !plan.price) {
+        response.status(500).send({ error: "Dados do plano são inválidos." });
+        return;
+      }
+
+      const region = "us-central1";
+      const projectId = process.env.GCLOUD_PROJECT;
+      const notification_url = `https://${region}-${projectId}.cloudfunctions.net/mercadoPagoWebhook`;
+
+      const preference = {
+        items: [
+          {
+            title: `Assinatura ${plan.name}`,
+            quantity: 1,
+            currency_id: "BRL",
+            unit_price: plan.price,
+          },
+        ],
+        payer: {
+          email: userEmail,
         },
-      ],
-      payer: {
-        email: userEmail,
-      },
-      back_urls: {
-        // TODO: Substitua pelas URLs do seu app web
-        success: `https://${projectId}.firebaseapp.com/success`,
-        failure: `https://${projectId}.firebaseapp.com/failure`,
-        pending: `https://${projectId}.firebaseapp.com/pending`,
-      },
-      auto_return: "approved",
-      external_reference: userId, // Referência para identificar o usuário no webhook
-      notification_url: notification_url, // URL para receber notificações de pagamento
-    };
+        back_urls: {
+          success: `https://${projectId}.firebaseapp.com/success`,
+          failure: `https://${projectId}.firebaseapp.com/failure`,
+          pending: `https://${projectId}.firebaseapp.com/pending`,
+        },
+        auto_return: "approved",
+        external_reference: userId,
+        notification_url: notification_url,
+      };
 
-    const response = await mercadopago.preferences.create(preference);
+      const mpResponse = await mercadopago.preferences.create(preference);
+      response.status(200).send({ data: { init_point: mpResponse.body.init_point } });
 
-    // Retorna o URL de checkout para o cliente
-    return { init_point: response.body.init_point };
-
-  } catch (error) {
-    console.error("Erro ao criar preferência do Mercado Pago:", error);
-    throw new functions.https.HttpsError("internal", "Não foi possível criar a preferência de pagamento.");
-  }
+    } catch (error) {
+      console.error("Erro ao criar preferência do Mercado Pago:", error);
+      response.status(500).send({ error: "Não foi possível criar a preferência de pagamento." });
+    }
+  });
 });
 
 
