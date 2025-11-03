@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/client_model.dart';
 import 'package:lavajato/models/plan_model.dart';
@@ -7,6 +8,7 @@ import 'package:lavajato/services/firestore_service.dart';
 import 'package:lavajato/services/mercadopago_service.dart';
 import 'package:lavajato/services/plan_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -19,45 +21,33 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   final MercadoPagoService _mercadoPagoService = MercadoPagoService();
   final FirestoreService _firestoreService = FirestoreService();
   final PlanService _planService = PlanService();
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
-  Future<void> _handleSubscription(BuildContext context, String plan) async {
-    if (_isProcessing) return;
-
-    // Armazene o ScaffoldMessenger antes de qualquer lacuna assíncrona para evitar avisos do linter.
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    setState(() => _isProcessing = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception("Usuário não está logado.");
+  // Renomeado 'plan' para 'planId' para clareza
+      Future<void> _handleSubscription(Plan plan) async {
+        try {
+          print('DEBUG: Plan ID sendo enviado para a Cloud Function: ${plan.id}');
+          final String initPoint = await _mercadoPagoService.createPreferenceAndGetInitPoint(planName: plan.id);
+          if (initPoint.isNotEmpty) {
+            if (await canLaunchUrl(Uri.parse(initPoint))) {
+              await launchUrl(Uri.parse(initPoint));
+            } else {
+              throw Exception('Não foi possível abrir a URL de pagamento.');
+            }
+          }
+        } catch (e) {
+          if (!mounted) return; // Correção para use_build_context_synchronously
+          String errorMessage = 'Ocorreu um erro inesperado.';
+          if (e is FirebaseFunctionsException) {
+            errorMessage = e.message ?? errorMessage;
+          } else if (e is Exception) { // Captura a exceção lançada pelo mercadopago_service.dart
+            errorMessage = e.toString().replaceFirst('Exception: ', '');
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
       }
-
-      // Corrigido: Chame createPreference com apenas um argumento.
-      final preference = await _mercadoPagoService.createPreference(plan);
-      final checkoutUrl = preference['checkoutUrl'];
-      final uri = Uri.parse(checkoutUrl);
-
-      // A melhor prática para url_launcher (especialmente na web) é chamar launchUrl diretamente.
-      // Ele lançará uma exceção em caso de falha, que será capturada.
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-    } catch (e) {
-      // Verifique 'mounted' antes de usar o context/scaffoldMessenger no bloco catch.
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text('Ocorreu um erro ao iniciar o pagamento: ${e.toString()}')),
-        );
-      }
-    } finally {
-      // Sempre pare o indicador de processamento.
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +179,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 title: plan.name,
                 price: 'R\$ ${plan.price.toStringAsFixed(2)}/mês',
                 features: plan.features,
-                onTap: isCurrentPlan ? null : () => _handleSubscription(context, plan.name),
+                onTap: isCurrentPlan ? null : () => _handleSubscription(plan),
                 buttonText: isCurrentPlan
                     ? 'Plano Atual'
                     : client == null

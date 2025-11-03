@@ -1,137 +1,179 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as mercadopago from "mercadopago";
+import * as cors from 'cors';
 
 admin.initializeApp();
 const db = admin.firestore();
 
-// 1. Corrigido: Usar 'token' ao invés de 'accesstoken' para corresponder ao .runtimeconfig.json
+// Inicializa o middleware CORS (necessário apenas para a função onRequest/webhook)
+const corsHandler = cors({ origin: true });
+
+// Configuração do Mercado Pago
 const mpToken = functions.config().mercadopago?.token;
 
 if (!mpToken) {
-  console.error("Mercado Pago access token not found. Set it with `firebase functions:config:set mercadopago.token=YOUR_TOKEN`");
-  throw new Error("MERCADOPAGO_TOKEN_NOT_SET");
+  console.error("MERCADO PAGO TOKEN NOT SET. Certifique-se de configurar a chave 'mercadopago.token'.");
+} else {
+  mercadopago.configure({
+    access_token: mpToken,
+  });
 }
 
-mercadopago.configure({
-  access_token: mpToken,
-});
 
-// 2. Nova Função: Criar preferência de pagamento
+// --- FUNÇÃO 1: CRIAR PREFERÊNCIA (Chamada pelo App Flutter via SDK) ---
 export const createPreference = functions.https.onCall(async (data, context) => {
-  // Autenticação: Garante que o usuário está logado.
+  // 1. Verificações Iniciais
+  if (!mpToken) {
+    throw new functions.https.HttpsError("unavailable", "O token de acesso ao Mercado Pago não foi configurado no servidor.");
+  }
+  
   if (!context.auth) {
     throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para criar uma preferência de pagamento.");
   }
 
   const userId = context.auth.uid;
-  const userEmail = context.auth.token.email;
-  const { planName } = data; // Recebe o nome do plano do app cliente
+  // CORREÇÃO: Define um email de fallback se o email não estiver no token (soluciona o INVALID_ARGUMENT)
+  const payerEmail = context.auth.token.email || `${userId}@anon.lavajato.com`; 
+  const { planName } = data; 
 
-  if (!planName || !userEmail) {
-    throw new functions.https.HttpsError("invalid-argument", "O nome do plano e o email são obrigatórios.");
+  if (!planName) {
+    throw new functions.https.HttpsError("invalid-argument", "O nome do plano é obrigatório.");
   }
 
   try {
-    // Busca os detalhes do plano no Firestore
+    // 2. BUSCA PELO ID DO DOCUMENTO (planName agora é o Document ID)
     const planDoc = await db.collection("plans").doc(planName).get();
+    
     if (!planDoc.exists) {
-      throw new functions.https.HttpsError("not-found", `Plano '${planName}' não encontrado.`);
+      throw new functions.https.HttpsError(
+        "not-found",
+        `Plano '${planName}' não encontrado.`
+      );
     }
+    
     const plan = planDoc.data();
-    if (!plan || !plan.price) {
-        throw new functions.https.HttpsError("internal", "Dados do plano são inválidos.");
+
+    // 3. Verificação de Dados (Usando plan.name, o campo correto)
+    if (!plan || !plan.price || !plan.name) { 
+        throw new functions.https.HttpsError("internal", "Dados do plano são inválidos (falta price ou name).");
     }
 
-    // Constrói a URL do webhook dinamicamente
-    const region = "us-central1"; // Ou a região onde sua função está hospedada
+    // 4. Constrói a URL do webhook
+    const region = process.env.FUNCTION_REGION || "us-central1"; 
     const projectId = process.env.GCLOUD_PROJECT;
     const notification_url = `https://${region}-${projectId}.cloudfunctions.net/mercadoPagoWebhook`;
 
+    // 5. Constrói a preferência do Mercado Pago
     const preference = {
       items: [
         {
-          title: `Assinatura ${plan.name}`,
+          id: planName, 
+          title: plan.name, // Usa plan.name
           quantity: 1,
           currency_id: "BRL",
           unit_price: plan.price,
         },
       ],
       payer: {
-        email: userEmail,
+        email: payerEmail, // Usa email de fallback se necessário
       },
       back_urls: {
-        // TODO: Substitua pelas URLs do seu app web
-        success: `https://${projectId}.firebaseapp.com/success`,
-        failure: `https://${projectId}.firebaseapp.com/failure`,
-        pending: `https://${projectId}.firebaseapp.com/pending`,
+        success: `https://${projectId}.firebaseapp.com/payment/success`,
+        failure: `https://${projectId}.firebaseapp.com/payment/failure`,
+        pending: `https://${projectId}.firebaseapp.com/payment/pending`,
       },
       auto_return: "approved",
-      external_reference: userId, // Referência para identificar o usuário no webhook
-      notification_url: notification_url, // URL para receber notificações de pagamento
+      external_reference: userId, 
+      notification_url: notification_url,
     };
 
     const response = await mercadopago.preferences.create(preference);
 
-    // Retorna o URL de checkout para o cliente
+    // 6. Retorna o URL de checkout
     return { init_point: response.body.init_point };
 
   } catch (error) {
     console.error("Erro ao criar preferência do Mercado Pago:", error);
+    if (error instanceof functions.https.HttpsError) {
+        throw error;
+    }
     throw new functions.https.HttpsError("internal", "Não foi possível criar a preferência de pagamento.");
   }
 });
 
 
-// Função Webhook existente (com pequenas melhorias)
+// --- FUNÇÃO 2: WEBHOOK DO MERCADO PAGO (Sem alterações significativas) ---
 export const mercadoPagoWebhook = functions.https.onRequest(async (request, response) => {
-  functions.logger.info("Webhook do Mercado Pago recebido!", { query: request.query });
+  corsHandler(request, response, async () => { 
+    functions.logger.info("Webhook do Mercado Pago recebido!", { query: request.query, body: request.body });
 
-  const { query } = request;
-  const topic = query.topic || query.type;
+    const { query } = request;
+    const topic = query.topic || query.type;
+    const paymentId = query.id || (query["data.id"] as string | undefined);
 
-  // O ID do pagamento pode vir em diferentes campos dependendo da versão da notificação
-  const paymentId = query.id || (query["data.id"] as string | undefined);
+    functions.logger.info(`Webhook - Topic: ${topic}, Payment ID recebido: ${paymentId}`); // NOVO LOG
 
-  if (topic === "payment" && paymentId) {
-    try {
-      functions.logger.info(`Processando pagamento com ID: ${paymentId}`);
+    if (topic === "payment" && paymentId) {
+      try {
+        if (!mpToken) {
+            functions.logger.error("Webhook - Token MP ausente, não foi possível consultar o pagamento.");
+            response.status(503).send("Service Unavailable");
+            return;
+        }
+        
+        const payment = await mercadopago.payment.findById(Number(paymentId));
+        functions.logger.info(`Webhook - Detalhes do Pagamento (${paymentId}): ${JSON.stringify(payment.body)}`);
 
-      const payment = await mercadopago.payment.findById(Number(paymentId));
+        if (payment && payment.body) {
+          const { status, external_reference, items } = payment.body;
 
-      if (payment && payment.body) {
-        const { status, external_reference, items } = payment.body;
+          functions.logger.info(`Webhook - Conteúdo completo de payment.body: ${JSON.stringify(payment.body)}`); // NOVO LOG
+          functions.logger.info(`Webhook - Tipo de 'items': ${typeof items}`); // NOVO LOG
+          functions.logger.info(`Webhook - Status: ${status}, External Reference: ${external_reference}, Items: ${JSON.stringify(items)}`);
 
-        if (!external_reference) {
-          functions.logger.warn(`external_reference não encontrado para o pagamento ${paymentId}. Ignorando.`);
-          response.status(200).send("OK (ignored, no external_reference)");
-          return;
+          if (!external_reference) {
+            functions.logger.warn(`Webhook - external_reference não encontrado para o pagamento ${paymentId}. Ignorando.`);
+            response.status(200).send("OK");
+            return;
+          }
+
+          // Adicionar verificação para 'items' antes de tentar acessar items[0]
+          if (!Array.isArray(items) || items.length === 0) { // Modificado para verificar se é um array
+            functions.logger.warn(`Webhook - Array 'items' vazio, ausente ou não é um array para o pagamento ${paymentId}. Não foi possível extrair o planName.`);
+            response.status(200).send("OK");
+            return;
+          }
+
+          const planName = items[0]?.id; 
+
+          if (status === "approved" && planName) {
+            const userRef = db.collection("clientes").doc(external_reference);
+            
+            await userRef.set({
+              subscriptionStatus: "active",
+              subscriptionPlan: planName,
+              subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true }); 
+
+            functions.logger.info(`Webhook - Assinatura do usuário ${external_reference} atualizada para o plano ${planName}.`);
+          } else {
+            functions.logger.info(`Webhook - Pagamento ${paymentId} não aprovado ou planName ausente. Status: ${status}, PlanName: ${planName}`);
+          }
+
+          functions.logger.info(`Webhook - Pagamento ${paymentId} processado com status: ${status}`);
+        } else {
+          functions.logger.error(`Webhook - Pagamento com ID ${paymentId} não encontrado nos detalhes do MP.`);
         }
 
-        const planName = items[0]?.title.includes("Básica") ? "basic" : "premium";
-
-        if (status === "approved") {
-          const userRef = db.collection("clientes").doc(external_reference);
-          await userRef.update({
-            subscriptionStatus: "active",
-            subscriptionPlan: planName,
-            subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
-          });
-          functions.logger.info(`Assinatura do usuário ${external_reference} atualizada para o plano ${planName}.`);
-        }
-
-        functions.logger.info(`Pagamento ${paymentId} processado com status: ${status}`);
-      } else {
-        functions.logger.error(`Pagamento com ID ${paymentId} não encontrado.`);
+        response.status(200).send("OK");
+      } catch (error) {
+        functions.logger.error("Webhook - Erro ao processar o webhook do Mercado Pago:", error);
+        response.status(500).send("Erro interno do servidor");
       }
-
-      response.status(200).send("OK");
-    } catch (error) {
-      functions.logger.error("Erro ao processar o webhook do Mercado Pago:", error);
-      response.status(500).send("Erro interno do servidor");
+    } else {
+      functions.logger.info(`Webhook - Requisição não é de pagamento ou paymentId ausente. Topic: ${topic}, Payment ID: ${paymentId}`);
+      response.status(200).send("OK (non-payment topic)");
     }
-  } else {
-    // Responde OK para outros tipos de notificações para evitar reenvios.
-    response.status(200).send("OK (not a payment notification)");
-  }
+  });
 });

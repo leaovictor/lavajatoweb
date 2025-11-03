@@ -1,38 +1,44 @@
 import 'package:cloud_functions/cloud_functions.dart';
 
 class MercadoPagoService {
-  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'us-central1'); // Especifique a região da sua função
+  // Use a região configurada na sua Cloud Function.
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'us-central1'); 
 
-  /// Cria uma preferência de pagamento de forma segura através de uma Cloud Function.
+  /// Cria uma preferência de pagamento de forma segura através de uma Cloud Function 
+  /// e retorna o URL de checkout (init_point).
   ///
-  /// [planName] é o nome do plano (ex: "basic" ou "premium") que deve corresponder
-  /// ao ID do documento na coleção 'plans' no Firestore.
-  Future<Map<String, dynamic>> createPreference(String planName) async {
+  /// [planName] é o nome do plano (ex: "basic" ou "premium").
+  /// @returns A URL de checkout (init_point) do Mercado Pago.
+  /// @throws Exceção com a mensagem de erro da Cloud Function ou do SDK.
+  Future<String> createPreferenceAndGetInitPoint({required String planName}) async {
     try {
-      // Obtém a referência para a função 'createPreference'
+      // LOG DE CONFIRMAÇÃO: Se você vir esta mensagem, o serviço foi chamado corretamente.
+      print('Chamando Cloud Function "createPreference" com plano: $planName');
+
       final HttpsCallable callable = _functions.httpsCallable('createPreference');
 
-      // Chama a função com os parâmetros necessários
       final response = await callable.call<Map<String, dynamic>>({
         'planName': planName,
       });
 
-      // A função retorna um mapa, e esperamos que contenha 'checkoutUrl' (ou 'init_point')
-      final checkoutUrl = response.data['init_point'];
+      final checkoutUrl = response.data?['init_point'] as String?;
 
       if (checkoutUrl == null) {
-        throw Exception('init_point not found in Cloud Function response');
+        // Se a função não lançar um erro, mas o init_point estiver faltando:
+        throw Exception('A Cloud Function não retornou o init_point. Verifique os logs do servidor.');
       }
 
-      return {'checkoutUrl': checkoutUrl};
+      return checkoutUrl;
+
     } on FirebaseFunctionsException catch (e) {
-      // Erros específicos do Firebase Functions
+      // Erros específicos do Firebase Functions (ex: unauthenticated, not-found)
       print('Erro ao chamar a Cloud Function: ${e.code} - ${e.message}');
-      throw Exception('Failed to create Mercado Pago preference via Cloud Function.');
+      // Lança uma exceção mais amigável usando a mensagem do servidor
+      throw Exception('Erro do Servidor (${e.code}): ${e.message}'); 
     } catch (e) {
-      // Outros erros
-      print('Erro inesperado: $e');
-      throw Exception('An unexpected error occurred.');
+      // Outros erros (ex: falha de rede)
+      print('Erro inesperado ao criar preferência: $e');
+      throw Exception('Erro inesperado: $e');
     }
   }
 }
