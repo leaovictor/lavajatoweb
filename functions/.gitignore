@@ -1,1 +1,17 @@
+# dependencies
+/node_modules
+
+# build directory
+/lib
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# local env files
+.env
+.DS_Store
 .runtimeconfig.json

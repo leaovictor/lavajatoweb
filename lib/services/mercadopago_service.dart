@@ -1,59 +1,38 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lavajato/mercadopago_keys.dart';
-
-import 'package:lavajato/services/plan_service.dart';
-// ... (rest of your imports)
+import 'package:cloud_functions/cloud_functions.dart';
 
 class MercadoPagoService {
-  final PlanService _planService = PlanService();
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'us-central1'); // Especifique a região da sua função
 
-  Future<Map<String, dynamic>> createPreference(String planName, String userId) async {
-    final url = Uri.parse('https://api.mercadopago.com/checkout/preferences');
+  /// Cria uma preferência de pagamento de forma segura através de uma Cloud Function.
+  ///
+  /// [planName] é o nome do plano (ex: "basic" ou "premium") que deve corresponder
+  /// ao ID do documento na coleção 'plans' no Firestore.
+  Future<Map<String, dynamic>> createPreference(String planName) async {
+    try {
+      // Obtém a referência para a função 'createPreference'
+      final HttpsCallable callable = _functions.httpsCallable('createPreference');
 
-    final plan = await _planService.getPlanByName(planName);
-    if (plan == null) throw Exception('Invalid plan');
+      // Chama a função com os parâmetros necessários
+      final response = await callable.call<Map<String, dynamic>>({
+        'planName': planName,
+      });
 
-    final body = {
-      "items": [
-        {
-          "title": "Assinatura ${plan.name}",
-          "quantity": 1,
-          "currency_id": "BRL",
-          "unit_price": plan.price,
-        }
-      ],
-      "payer": {
-        "email": FirebaseAuth.instance.currentUser?.email ?? '',
-      },
-      "back_urls": {
-        "success": "https://www.success.com",
-        "failure": "https://www.failure.com",
-        "pending": "https://www.pending.com",
-      },
-      "auto_return": "approved",
-      "external_reference": userId,
-    };
+      // A função retorna um mapa, e esperamos que contenha 'checkoutUrl' (ou 'init_point')
+      final checkoutUrl = response.data['init_point'];
 
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $mercadoPagoAccessToken',
-      },
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 201) {
-      final responseBody = jsonDecode(response.body);
-      final checkoutUrl = responseBody['init_point'];
       if (checkoutUrl == null) {
-        throw Exception('init_point not found in Mercado Pago response');
+        throw Exception('init_point not found in Cloud Function response');
       }
+
       return {'checkoutUrl': checkoutUrl};
-    } else {
-      throw Exception('Failed to create Mercado Pago preference: ${response.body}');
+    } on FirebaseFunctionsException catch (e) {
+      // Erros específicos do Firebase Functions
+      print('Erro ao chamar a Cloud Function: ${e.code} - ${e.message}');
+      throw Exception('Failed to create Mercado Pago preference via Cloud Function.');
+    } catch (e) {
+      // Outros erros
+      print('Erro inesperado: $e');
+      throw Exception('An unexpected error occurred.');
     }
   }
 }
