@@ -1,11 +1,11 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lavajato/mercadopago_keys.dart';
 
 class MercadoPagoService {
-  // Simulates a backend call to create a payment preference
   Future<Map<String, dynamic>> createPreference(String plan) async {
-    // In a real app, this would make an HTTP request to your server.
-    // Your server would then use the Mercado Pago SDK with your access token
-    // to create the preference and return the checkout URL.
+    final url = Uri.parse('https://api.mercadopago.com/checkout/preferences');
 
     final Map<String, double> prices = {
       'basic': 29.90,
@@ -14,15 +14,45 @@ class MercadoPagoService {
     final price = prices[plan];
     if (price == null) throw Exception('Invalid plan');
 
-    // Simulate the response from your backend
-    return Future.delayed(const Duration(seconds: 1), () {
-      return {
-        "status": "201",
-        "response": {
-          "id": "123456789-abcdefgh",
-          "init_point": "https://www.mercadopago.com.br/sandbox/pay/123456789abcdefgh",
-        },
-      };
-    });
+    final body = {
+      "items": [
+        {
+          "title": "Assinatura ${plan == 'basic' ? 'Básica' : 'Premium'}",
+          "quantity": 1,
+          "currency_id": "BRL",
+          "unit_price": price,
+        }
+      ],
+      "payer": {
+        "email": FirebaseAuth.instance.currentUser?.email ?? '',
+      },
+      "back_urls": {
+        "success": "https://www.success.com",
+        "failure": "https://www.failure.com",
+        "pending": "https://www.pending.com",
+      },
+      "auto_return": "approved",
+    };
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $mercadoPagoAccessToken',
+      },
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 201) {
+      final responseBody = jsonDecode(response.body);
+      // Para ambiente de sandbox, use a URL 'sandbox_init_point'
+      final checkoutUrl = responseBody['sandbox_init_point'];
+      if (checkoutUrl == null) {
+        throw Exception('sandbox_init_point not found in Mercado Pago response');
+      }
+      return {'checkoutUrl': checkoutUrl};
+    } else {
+      throw Exception('Failed to create Mercado Pago preference: ${response.body}');
+    }
   }
 }

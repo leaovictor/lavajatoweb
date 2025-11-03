@@ -21,33 +21,28 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
     try {
       final preference = await _mercadoPagoService.createPreference(plan);
-      final checkoutUrl = preference['response']['init_point'];
-      print('Checkout URL: $checkoutUrl');
+      final checkoutUrl = preference['checkoutUrl'];
 
       final uri = Uri.parse(checkoutUrl);
 
-      try {
+      if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
-      } catch (e) {
-        print('Error launching URL: $e');
+        if (mounted) {
+          _showPaymentSimulationDialog(context, plan);
+        }
+      } else {
         throw 'Could not launch $checkoutUrl';
       }
-
-      // In a real application, you would need a webhook to receive payment
-      // confirmation from Mercado Pago on your server, which would then
-      // update the user's subscription status in Firestore.
-      // For this simulation, we will show a confirmation message and the user
-      // can manually confirm their subscription status on the appointments screen.
-      if (!mounted) return;
-      _showPaymentSimulationDialog(context, plan);
-
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     }
   }
 
@@ -57,12 +52,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       await FirestoreService()
           .updateUserSubscriptionStatus(user.uid, 'active', plan);
 
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Pagamento concluído e assinatura ativada!')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Pagamento concluído e assinatura ativada!')),
+        );
+      }
     }
   }
 
@@ -73,14 +68,16 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Simulação de Pagamento'),
-          content: const Text('Você foi redirecionado para o Mercado Pago. O pagamento foi aprovado?'),
+          content: const Text('Você foi redirecionado para o Mercado Pago. Após concluir, confirme se o pagamento foi aprovado.'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pagamento cancelado.')),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pagamento cancelado.')),
+                  );
+                }
               },
               child: const Text('Cancelar'),
             ),
