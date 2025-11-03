@@ -1,13 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/client_model.dart';
 import 'package:lavajato/models/plan_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
-import 'package:lavajato/services/mercadopago_service.dart';
 import 'package:lavajato/services/plan_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:lavajato/services/stripe_service.dart';
 
 
 class SubscriptionScreen extends StatefulWidget {
@@ -18,36 +16,29 @@ class SubscriptionScreen extends StatefulWidget {
 }
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
-  final MercadoPagoService _mercadoPagoService = MercadoPagoService();
+  final StripeService _stripeService = StripeService();
   final FirestoreService _firestoreService = FirestoreService();
   final PlanService _planService = PlanService();
   final bool _isProcessing = false;
 
-  // Renomeado 'plan' para 'planId' para clareza
-      Future<void> _handleSubscription(Plan plan) async {
-        try {
-          print('DEBUG: Plan ID sendo enviado para a Cloud Function: ${plan.id}');
-          final String initPoint = await _mercadoPagoService.createPreferenceAndGetInitPoint(planName: plan.id);
-          if (initPoint.isNotEmpty) {
-            if (await canLaunchUrl(Uri.parse(initPoint))) {
-              await launchUrl(Uri.parse(initPoint));
-            } else {
-              throw Exception('Não foi possível abrir a URL de pagamento.');
-            }
-          }
-        } catch (e) {
-          if (!mounted) return; // Correção para use_build_context_synchronously
-          String errorMessage = 'Ocorreu um erro inesperado.';
-          if (e is FirebaseFunctionsException) {
-            errorMessage = e.message ?? errorMessage;
-          } else if (e is Exception) { // Captura a exceção lançada pelo mercadopago_service.dart
-            errorMessage = e.toString().replaceFirst('Exception: ', '');
-          }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMessage)),
-          );
-        }
+  Future<void> _handleSubscription(Plan plan) async {
+    try {
+      await _stripeService.createCheckoutSessionAndRedirect(
+        planId: plan.id,
+        successUrl: 'https://lavajato-5944c.firebaseapp.com/payment/success',
+        cancelUrl: 'https://lavajato-5944c.firebaseapp.com/payment/failure',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      String errorMessage = 'Ocorreu um erro inesperado.';
+      if (e is Exception) {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
       }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

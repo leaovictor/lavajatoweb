@@ -1,179 +1,137 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import * as mercadopago from "mercadopago";
 import * as cors from 'cors';
+import Stripe from 'stripe';
 
 admin.initializeApp();
 const db = admin.firestore();
-
-// Inicializa o middleware CORS (necessário apenas para a função onRequest/webhook)
 const corsHandler = cors({ origin: true });
 
-// Configuração do Mercado Pago
-const mpToken = functions.config().mercadopago?.token;
-
-if (!mpToken) {
-  console.error("MERCADO PAGO TOKEN NOT SET. Certifique-se de configurar a chave 'mercadopago.token'.");
-} else {
-  mercadopago.configure({
-    access_token: mpToken,
-  });
+// Stripe configuration
+const stripeSecret = functions.config().stripe?.secret;
+if (!stripeSecret) {
+  console.error("STRIPE SECRET KEY NOT SET. Make sure to set the 'stripe.secret' config key.");
 }
+const stripe = new Stripe(stripeSecret, { apiVersion: '2024-06-20' });
 
 
-// --- FUNÇÃO 1: CRIAR PREFERÊNCIA (Chamada pelo App Flutter via SDK) ---
-export const createPreference = functions.https.onCall(async (data, context) => {
-  // 1. Verificações Iniciais
-  if (!mpToken) {
-    throw new functions.https.HttpsError("unavailable", "O token de acesso ao Mercado Pago não foi configurado no servidor.");
+export const createCheckoutSession = functions.https.onCall(async (data, context) => {
+  if (!stripeSecret) {
+    throw new functions.https.HttpsError("unavailable", "Stripe secret key not set on the server.");
   }
   
   if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "Você precisa estar logado para criar uma preferência de pagamento.");
+    throw new functions.https.HttpsError("unauthenticated", "You must be logged in to create a checkout session.");
   }
 
   const userId = context.auth.uid;
-  // CORREÇÃO: Define um email de fallback se o email não estiver no token (soluciona o INVALID_ARGUMENT)
-  const payerEmail = context.auth.token.email || `${userId}@anon.lavajato.com`; 
-  const { planName } = data; 
+  const userEmail = context.auth.token.email;
+  const { planId } = data;
 
-  if (!planName) {
-    throw new functions.https.HttpsError("invalid-argument", "O nome do plano é obrigatório.");
+  if (!planId) {
+    throw new functions.https.HttpsError("invalid-argument", "The 'planId' is required.");
   }
 
   try {
-    // 2. BUSCA PELO ID DO DOCUMENTO (planName agora é o Document ID)
-    const planDoc = await db.collection("plans").doc(planName).get();
-    
+    const planDoc = await db.collection("plans").doc(planId).get();
     if (!planDoc.exists) {
-      throw new functions.https.HttpsError(
-        "not-found",
-        `Plano '${planName}' não encontrado.`
-      );
+      throw new functions.https.HttpsError("not-found", `Plan '${planId}' not found.`);
     }
-    
+
     const plan = planDoc.data();
-
-    // 3. Verificação de Dados (Usando plan.name, o campo correto)
-    if (!plan || !plan.price || !plan.name) { 
-        throw new functions.https.HttpsError("internal", "Dados do plano são inválidos (falta price ou name).");
+    if (!plan || !plan.price || !plan.name) {
+      throw new functions.https.HttpsError("internal", "Plan data is invalid (missing price or name).");
     }
 
-    // 4. Constrói a URL do webhook
-    const region = process.env.FUNCTION_REGION || "us-central1"; 
-    const projectId = process.env.GCLOUD_PROJECT;
-    const notification_url = `https://${region}-${projectId}.cloudfunctions.net/mercadoPagoWebhook`;
-
-    // 5. Constrói a preferência do Mercado Pago
-    const preference = {
-      items: [
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      line_items: [
         {
-          id: planName, 
-          title: plan.name, // Usa plan.name
+          price_data: {
+            currency: 'brl',
+            product_data: {
+              name: plan.name,
+            },
+            unit_amount: Math.round(plan.price * 100), // Stripe expects the amount in cents
+            recurring: {
+              interval: 'month',
+            },
+          },
           quantity: 1,
-          currency_id: "BRL",
-          unit_price: plan.price,
         },
       ],
-      payer: {
-        email: payerEmail, // Usa email de fallback se necessário
+      metadata: {
+        planId: planId,
       },
-      back_urls: {
-        success: `https://${projectId}.firebaseapp.com/payment/success`,
-        failure: `https://${projectId}.firebaseapp.com/payment/failure`,
-        pending: `https://${projectId}.firebaseapp.com/payment/pending`,
-      },
-      auto_return: "approved",
-      external_reference: userId, 
-      notification_url: notification_url,
-    };
+      customer_email: userEmail,
+      client_reference_id: userId,
+      success_url: data.success_url || `https://lavajato-5944c.firebaseapp.com/payment/success`,
+      cancel_url: data.cancel_url || `https://lavajato-5944c.firebaseapp.com/payment/failure`,
+    });
 
-    const response = await mercadopago.preferences.create(preference);
-
-    // 6. Retorna o URL de checkout
-    return { init_point: response.body.init_point };
+    return { sessionId: session.id };
 
   } catch (error) {
-    console.error("Erro ao criar preferência do Mercado Pago:", error);
+    console.error("Error creating Stripe checkout session:", error);
     if (error instanceof functions.https.HttpsError) {
-        throw error;
+      throw error;
     }
-    throw new functions.https.HttpsError("internal", "Não foi possível criar a preferência de pagamento.");
+    throw new functions.https.HttpsError("internal", "Could not create payment session.");
   }
 });
 
+export const stripeWebhook = functions.https.onRequest(async (request, response) => {
+  corsHandler(request, response, async () => {
+    const sig = request.headers['stripe-signature'] as string;
+    const webhookSecret = functions.config().stripe?.webhook_secret;
 
-// --- FUNÇÃO 2: WEBHOOK DO MERCADO PAGO (Sem alterações significativas) ---
-export const mercadoPagoWebhook = functions.https.onRequest(async (request, response) => {
-  corsHandler(request, response, async () => { 
-    functions.logger.info("Webhook do Mercado Pago recebido!", { query: request.query, body: request.body });
-
-    const { query } = request;
-    const topic = query.topic || query.type;
-    const paymentId = query.id || (query["data.id"] as string | undefined);
-
-    functions.logger.info(`Webhook - Topic: ${topic}, Payment ID recebido: ${paymentId}`); // NOVO LOG
-
-    if (topic === "payment" && paymentId) {
-      try {
-        if (!mpToken) {
-            functions.logger.error("Webhook - Token MP ausente, não foi possível consultar o pagamento.");
-            response.status(503).send("Service Unavailable");
-            return;
-        }
-        
-        const payment = await mercadopago.payment.findById(Number(paymentId));
-        functions.logger.info(`Webhook - Detalhes do Pagamento (${paymentId}): ${JSON.stringify(payment.body)}`);
-
-        if (payment && payment.body) {
-          const { status, external_reference, items } = payment.body;
-
-          functions.logger.info(`Webhook - Conteúdo completo de payment.body: ${JSON.stringify(payment.body)}`); // NOVO LOG
-          functions.logger.info(`Webhook - Tipo de 'items': ${typeof items}`); // NOVO LOG
-          functions.logger.info(`Webhook - Status: ${status}, External Reference: ${external_reference}, Items: ${JSON.stringify(items)}`);
-
-          if (!external_reference) {
-            functions.logger.warn(`Webhook - external_reference não encontrado para o pagamento ${paymentId}. Ignorando.`);
-            response.status(200).send("OK");
-            return;
-          }
-
-          // Adicionar verificação para 'items' antes de tentar acessar items[0]
-          if (!Array.isArray(items) || items.length === 0) { // Modificado para verificar se é um array
-            functions.logger.warn(`Webhook - Array 'items' vazio, ausente ou não é um array para o pagamento ${paymentId}. Não foi possível extrair o planName.`);
-            response.status(200).send("OK");
-            return;
-          }
-
-          const planName = items[0]?.id; 
-
-          if (status === "approved" && planName) {
-            const userRef = db.collection("clientes").doc(external_reference);
-            
-            await userRef.set({
-              subscriptionStatus: "active",
-              subscriptionPlan: planName,
-              subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
-            }, { merge: true }); 
-
-            functions.logger.info(`Webhook - Assinatura do usuário ${external_reference} atualizada para o plano ${planName}.`);
-          } else {
-            functions.logger.info(`Webhook - Pagamento ${paymentId} não aprovado ou planName ausente. Status: ${status}, PlanName: ${planName}`);
-          }
-
-          functions.logger.info(`Webhook - Pagamento ${paymentId} processado com status: ${status}`);
-        } else {
-          functions.logger.error(`Webhook - Pagamento com ID ${paymentId} não encontrado nos detalhes do MP.`);
-        }
-
-        response.status(200).send("OK");
-      } catch (error) {
-        functions.logger.error("Webhook - Erro ao processar o webhook do Mercado Pago:", error);
-        response.status(500).send("Erro interno do servidor");
-      }
-    } else {
-      functions.logger.info(`Webhook - Requisição não é de pagamento ou paymentId ausente. Topic: ${topic}, Payment ID: ${paymentId}`);
-      response.status(200).send("OK (non-payment topic)");
+    if (!webhookSecret) {
+      console.error("STRIPE WEBHOOK SECRET NOT SET.");
+      response.status(400).send("Webhook secret not configured.");
+      return;
     }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(request.rawBody, sig, webhookSecret);
+    } catch (err: any) {
+      console.error("Webhook signature verification failed.", err.message);
+      response.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+
+    // Handle the checkout.session.completed event
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.client_reference_id;
+      const planId = session.metadata?.planId;
+
+      if (!userId || !planId) {
+        console.error("Webhook received a session without a client_reference_id (userId) or planId.");
+        response.status(200).send("OK (missing data)");
+        return;
+      }
+
+      const userRef = db.collection("clientes").doc(userId);
+
+      try {
+        await userRef.set({
+          subscriptionStatus: "active",
+          subscriptionId: session.subscription, // Store the subscription ID for future management
+          subscriptionPlan: planId,
+          subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        console.log(`User subscription updated for userId: ${userId}`);
+      } catch (dbError) {
+        console.error("Failed to update user subscription status in Firestore:", dbError);
+        response.status(500).send("Database error.");
+        return;
+      }
+    }
+
+    response.status(200).send("OK");
   });
 });
