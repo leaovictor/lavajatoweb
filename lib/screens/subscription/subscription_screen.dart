@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
+// Certifique-se de que esta importação está correta
+import 'package:flutter_stripe/flutter_stripe.dart' hide Card; 
 import 'package:lavajato/services/firestore_service.dart';
-import 'package:lavajato/stripe_keys.dart';
+// Certifique-se de que paymentIntentClientSecret está neste arquivo
+import 'package:lavajato/stripe_keys.dart'; 
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -15,16 +17,23 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   // Controller para o campo de cartão de crédito na web
   final controller = CardEditController();
+  
+  // Novo estado para gerenciar se o pagamento está em progresso
+  bool _isProcessing = false; 
 
   // Função principal que orquestra o fluxo de pagamento
   Future<void> _handleSubscription(BuildContext context, String plan) async {
+    // Impede cliques múltiplos
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
     try {
       // 1. (SIMULADO) Cria a intenção de pagamento no backend
       final paymentIntent = await _createPaymentIntent(plan);
       final clientSecret = paymentIntent?['clientSecret'];
 
       if (clientSecret == null) {
-        throw Exception('Falha ao criar a intenção de pagamento.');
+        throw Exception('Falha ao criar a intenção de pagamento. (Client Secret ausente)');
       }
 
       // 2. Executa o fluxo de pagamento específico da plataforma
@@ -33,15 +42,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       } else {
         await _handleMobileAppPayment(context, clientSecret, plan);
       }
+      
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      // Trata erros específicos do Stripe (ex: cartão recusado)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Pagamento falhou: ${e.error.localizedMessage}')),
+      );
     } on Exception catch (e) {
       if (!mounted) return;
+      // Trata erros genéricos
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
       );
+    } finally {
+      // Garante que o estado de processamento seja resetado
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  // Lida com o pagamento na plataforma Web
+  // Lida com o pagamento na plataforma Web (CORRIGIDO)
   Future<void> _handleWebAppPayment(
       BuildContext context, String clientSecret, String plan) async {
     // Exibe um diálogo com o formulário de cartão
@@ -66,19 +86,55 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             ElevatedButton(
               onPressed: () async {
                 if (controller.complete) {
-                  // 3. Confirma o pagamento com os dados do cartão
-                  await Stripe.instance.confirmPayment(
-                    paymentIntentClientSecret: clientSecret,
-                    data: const PaymentMethodParams.card(
-                      paymentMethodData: PaymentMethodData(),
-                    ),
-                  );
-                  await _onPaymentSuccess(context, plan);
-                  if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+                  try {
+                    // 3. Confirma o pagamento usando os dados do cartão do controller
+                    await Stripe.instance.confirmPayment(
+                      paymentIntentClientSecret: clientSecret,
+                      data: PaymentMethodParams.card(
+                        paymentMethodData: PaymentMethodData(
+                          billingDetails: BillingDetails(
+                            address: Address(
+                              city: '',
+                              country: 'BR',
+                              line1: '',
+                              line2: '',
+                              state: '',
+                              postalCode: controller.details.postalCode,
+                            ),
+                          ),
+                        ),
+                      ),
+                      options: const PaymentMethodOptions(
+                        setupFutureUsage:
+                            PaymentIntentsFutureUsage.OffSession,
+                      ),
+                    );
+
+                    // Sucesso
+                    await _onPaymentSuccess(context, plan);
+                    // Check antes de fechar o diálogo
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  } on StripeException catch (e) {
+                    if (!dialogContext.mounted) return;
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              'Pagamento falhou: ${e.error.localizedMessage}')),
+                    );
+                  } catch (e) {
+                    if (!dialogContext.mounted) return;
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
+                      SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
+                    );
+                  }
                 } else {
+                  if (!dialogContext.mounted) return;
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(
-                        content: Text('Por favor, preencha os dados do cartão.')),
+                        content:
+                            Text('Por favor, preencha os dados do cartão.')),
                   );
                 }
               },
@@ -98,10 +154,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       paymentSheetParameters: SetupPaymentSheetParameters(
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'LavaJato App',
+        // Adicione um tema ou cores, se desejar
+        // style: ThemeMode.light,
       ),
     );
 
     // 3. Apresenta a Payment Sheet
+    // presentPaymentSheet() lança uma StripeException se for cancelado ou falhar
     await Stripe.instance.presentPaymentSheet();
 
     // 4. Se o pagamento for concluído com sucesso, atualiza o status do usuário
@@ -114,7 +173,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     if (user != null) {
       await FirestoreService()
           .updateUserSubscriptionStatus(user.uid, 'active', plan);
-      if (!context.mounted) return;
+      
+      // Check antes de usar o context
+      if (!context.mounted) return; 
+      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Pagamento concluído e assinatura ativada!')),
@@ -125,12 +187,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   // (SIMULADO) Função que representa a chamada ao seu backend
   Future<Map<String, dynamic>?> _createPaymentIntent(String plan) async {
     final Map<String, int> prices = {
-      'basic': 2990,
+      // Preço em centavos
+      'basic': 2990, 
       'premium': 5990,
     };
     final amount = prices[plan];
     if (amount == null) return null;
 
+    // Retorna o Client Secret definido em stripe_keys.dart para simulação
     return {
       'clientSecret': paymentIntentClientSecret,
       'amount': amount,
@@ -154,7 +218,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               '1 lavagem simples por mês',
               'Acesso a agendamentos online',
             ],
-            onTap: () => _handleSubscription(context, 'basic'),
+            // Passa null para onTap se estiver processando
+            onTap: _isProcessing ? null : () => _handleSubscription(context, 'basic'),
           ),
           const SizedBox(height: 16),
           _buildSubscriptionCard(
@@ -166,7 +231,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               'Enceramento incluso',
               'Acesso prioritário a agendamentos',
             ],
-            onTap: () => _handleSubscription(context, 'premium'),
+            // Passa null para onTap se estiver processando
+            onTap: _isProcessing ? null : () => _handleSubscription(context, 'premium'),
           ),
         ],
       ),
@@ -178,7 +244,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     required String title,
     required String price,
     required List<String> features,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
   }) {
     return Card(
       elevation: 4,
@@ -213,8 +279,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: onTap,
-                child: const Text('Assinar Agora'),
+                onPressed: onTap, // Desabilitado se onTap for null
+                child: onTap == null
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Assinar Agora'),
               ),
             ),
           ],
