@@ -23,38 +23,36 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Future<void> _handleSubscription(BuildContext context, String plan) async {
     if (_isProcessing) return;
+
+    // Armazene o ScaffoldMessenger antes de qualquer lacuna assíncrona para evitar avisos do linter.
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
     setState(() => _isProcessing = true);
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      // Handle user not logged in
-      setState(() => _isProcessing = false);
-      return;
-    }
-
     try {
-      final preference = await _mercadoPagoService.createPreference(plan, user.uid);
-      final checkoutUrl = preference['checkoutUrl'];
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("Usuário não está logado.");
+      }
 
+      // Corrigido: Chame createPreference com apenas um argumento.
+      final preference = await _mercadoPagoService.createPreference(plan);
+      final checkoutUrl = preference['checkoutUrl'];
       final uri = Uri.parse(checkoutUrl);
 
-      if (!mounted) return;
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Não foi possível abrir o link $checkoutUrl')),
-          );
-        }
-      }
+      // A melhor prática para url_launcher (especialmente na web) é chamar launchUrl diretamente.
+      // Ele lançará uma exceção em caso de falha, que será capturada.
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+
     } catch (e) {
+      // Verifique 'mounted' antes de usar o context/scaffoldMessenger no bloco catch.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ocorreu um erro: ${e.toString()}')),
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro ao iniciar o pagamento: ${e.toString()}')),
         );
       }
     } finally {
+      // Sempre pare o indicador de processamento.
       if (mounted) {
         setState(() => _isProcessing = false);
       }
