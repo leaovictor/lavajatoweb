@@ -1,33 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:flutter/foundation.dart'; // Contains kIsWeb
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/services/auth_gate.dart';
-import 'package:lavajato/stripe_keys.dart'; // Assumed to contain stripePublishableKey
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 1. Initialize Firebase, conditionally using web options if running in a browser.
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: kIsWeb ? DefaultFirebaseOptions.web : DefaultFirebaseOptions.currentPlatform,
   );
-
-  // 2. Initialize Stripe
-  // Set the publishable key for all platforms.
-  Stripe.publishableKey = stripePublishableKey;
-
-  // The `applySettings` method is only available on mobile/desktop and will
-  // crash on Flutter Web. We use a conditional check to avoid this.
-  if (!kIsWeb) {
-    await Stripe.instance.applySettings();
-  }
-  
-  // NOTE FOR WEB: On Flutter Web, the Stripe keys should also be configured 
-  // by ensuring the Stripe SDK is loaded via a <script> tag in your index.html file.
-  // The flutter_stripe package then bridges to the browser SDK automatically.
 
   runApp(const MyApp());
 }
