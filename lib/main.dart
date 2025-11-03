@@ -4,14 +4,22 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/foundation.dart'; // Contains kIsWeb
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/services/auth_gate.dart';
+import 'package:lavajato/services/stripe_service.dart'; // <-- IMPORTAÇÃO ADICIONADA
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // 1. Initialize Firebase
   await Firebase.initializeApp(
     options: kIsWeb ? DefaultFirebaseOptions.web : DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // 2. Initialize Stripe SDK (needs to be done once per app launch)
+  if (!kIsWeb) {
+    Stripe.publishableKey = StripeService.publishableKey;
+    await Stripe.instance.applySettings();
+  }
 
   runApp(const MyApp());
 }

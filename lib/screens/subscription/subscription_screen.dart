@@ -23,6 +23,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   Future<void> _handleSubscription(Plan plan) async {
     try {
+      // Ensure user is authenticated and refresh token
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Você precisa estar logado para assinar um plano.')),
+        );
+        return;
+      }
+      await user.getIdToken(true); // Force refresh of ID token
+
       await _stripeService.createCheckoutSessionAndRedirect(
         planId: plan.id,
         successUrl: 'https://lavajato-5944c.firebaseapp.com/payment/success',

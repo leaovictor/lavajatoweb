@@ -17,6 +17,9 @@
     {
       "source": "functions",
       "codebase": "default",
+      "runtime": "nodejs20",
+      "gen": 2,
+      "allowUnauthenticated": true,
       "ignore": [
         "node_modules",
         ".git",
