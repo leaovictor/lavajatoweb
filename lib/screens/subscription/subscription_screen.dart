@@ -22,10 +22,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     try {
       final preference = await _mercadoPagoService.createPreference(plan);
       final checkoutUrl = preference['response']['init_point'];
+      print('Checkout URL: $checkoutUrl');
 
-      if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
-        await launchUrl(Uri.parse(checkoutUrl));
-      } else {
+      final uri = Uri.parse(checkoutUrl);
+
+      try {
+        await launchUrl(uri);
+      } catch (e) {
+        print('Error launching URL: $e');
         throw 'Could not launch $checkoutUrl';
       }
 
@@ -35,9 +39,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       // For this simulation, we will show a confirmation message and the user
       // can manually confirm their subscription status on the appointments screen.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Redirecionando para o pagamento. Por favor, verifique o status da sua assinatura após a conclusão.')),
-      );
+      _showPaymentSimulationDialog(context, plan);
 
     } catch (e) {
       if (!mounted) return;
@@ -47,6 +49,52 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  Future<void> _onPaymentSuccess(BuildContext context, String plan) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await FirestoreService()
+          .updateUserSubscriptionStatus(user.uid, 'active', plan);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Pagamento concluído e assinatura ativada!')),
+      );
+    }
+  }
+
+  void _showPaymentSimulationDialog(BuildContext context, String plan) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Simulação de Pagamento'),
+          content: const Text('Você foi redirecionado para o Mercado Pago. O pagamento foi aprovado?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Pagamento cancelado.')),
+                );
+              },
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _onPaymentSuccess(context, plan);
+              },
+              child: const Text('Aprovado'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
