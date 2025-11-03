@@ -37,10 +37,9 @@ exports.createPreference = functions.https.onCall(async (data, context) => {
         throw new functions.https.HttpsError("invalid-argument", "O nome do plano é obrigatório.");
     }
     try {
-        // 2. BUSCA CORRETA PELO ID DO DOCUMENTO (Assumindo que planName é o Document ID: "Basic")
+        // 2. BUSCA PELO ID DO DOCUMENTO (planName agora é o Document ID)
         const planDoc = await db.collection("plans").doc(planName).get();
         if (!planDoc.exists) {
-            // Se esta linha ainda for alcançada, a chave "Basic" no Firestore está errada.
             throw new functions.https.HttpsError("not-found", `Plano '${planName}' não encontrado.`);
         }
         const plan = planDoc.data();
@@ -90,27 +89,40 @@ exports.createPreference = functions.https.onCall(async (data, context) => {
 // --- FUNÇÃO 2: WEBHOOK DO MERCADO PAGO (Sem alterações significativas) ---
 exports.mercadoPagoWebhook = functions.https.onRequest(async (request, response) => {
     corsHandler(request, response, async () => {
-        var _a;
-        functions.logger.info("Webhook do Mercado Pago recebido!", { query: request.query });
-        const { query } = request;
-        const topic = query.topic || query.type;
-        const paymentId = query.id || query["data.id"];
+        var _a, _b;
+        const query = request.query;
+        const body = request.body;
+        // Unifica a extração de dados do 'body' (prioridade) e 'query' (fallback)
+        const topic = (body === null || body === void 0 ? void 0 : body.topic) || (body === null || body === void 0 ? void 0 : body.type) || query.topic || query.type;
+        const paymentId = ((_a = body === null || body === void 0 ? void 0 : body.data) === null || _a === void 0 ? void 0 : _a.id) || query.id || query["data.id"];
+        functions.logger.info("Webhook do Mercado Pago recebido!", { query: query, body: body });
+        functions.logger.info(`Webhook - Topic extraído: ${topic}, Payment ID extraído: ${paymentId}`);
         if (topic === "payment" && paymentId) {
             try {
                 if (!mpToken) {
-                    functions.logger.error("Token MP ausente, não foi possível consultar o pagamento.");
+                    functions.logger.error("Webhook - Token MP ausente, não foi possível consultar o pagamento.");
                     response.status(503).send("Service Unavailable");
                     return;
                 }
                 const payment = await mercadopago.payment.findById(Number(paymentId));
+                functions.logger.info(`Webhook - Detalhes do Pagamento (${paymentId}): ${JSON.stringify(payment.body)}`);
                 if (payment && payment.body) {
                     const { status, external_reference, items } = payment.body;
+                    functions.logger.info(`Webhook - Conteúdo completo de payment.body: ${JSON.stringify(payment.body)}`); // NOVO LOG
+                    functions.logger.info(`Webhook - Tipo de 'items': ${typeof items}`); // NOVO LOG
+                    functions.logger.info(`Webhook - Status: ${status}, External Reference: ${external_reference}, Items: ${JSON.stringify(items)}`);
                     if (!external_reference) {
-                        functions.logger.warn(`external_reference não encontrado para o pagamento ${paymentId}. Ignorando.`);
+                        functions.logger.warn(`Webhook - external_reference não encontrado para o pagamento ${paymentId}. Ignorando.`);
                         response.status(200).send("OK");
                         return;
                     }
-                    const planName = (_a = items[0]) === null || _a === void 0 ? void 0 : _a.id;
+                    // Adicionar verificação para 'items' antes de tentar acessar items[0]
+                    if (!Array.isArray(items) || items.length === 0) { // Modificado para verificar se é um array
+                        functions.logger.warn(`Webhook - Array 'items' vazio, ausente ou não é um array para o pagamento ${paymentId}. Não foi possível extrair o planName.`);
+                        response.status(200).send("OK");
+                        return;
+                    }
+                    const planName = (_b = items[0]) === null || _b === void 0 ? void 0 : _b.id;
                     if (status === "approved" && planName) {
                         const userRef = db.collection("clientes").doc(external_reference);
                         await userRef.set({
@@ -118,21 +130,25 @@ exports.mercadoPagoWebhook = functions.https.onRequest(async (request, response)
                             subscriptionPlan: planName,
                             subscriptionDate: admin.firestore.FieldValue.serverTimestamp(),
                         }, { merge: true });
-                        functions.logger.info(`Assinatura do usuário ${external_reference} atualizada para o plano ${planName}.`);
+                        functions.logger.info(`Webhook - Assinatura do usuário ${external_reference} atualizada para o plano ${planName}.`);
                     }
-                    functions.logger.info(`Pagamento ${paymentId} processado com status: ${status}`);
+                    else {
+                        functions.logger.info(`Webhook - Pagamento ${paymentId} não aprovado ou planName ausente. Status: ${status}, PlanName: ${planName}`);
+                    }
+                    functions.logger.info(`Webhook - Pagamento ${paymentId} processado com status: ${status}`);
                 }
                 else {
-                    functions.logger.error(`Pagamento com ID ${paymentId} não encontrado.`);
+                    functions.logger.error(`Webhook - Pagamento com ID ${paymentId} não encontrado nos detalhes do MP.`);
                 }
                 response.status(200).send("OK");
             }
             catch (error) {
-                functions.logger.error("Erro ao processar o webhook do Mercado Pago:", error);
+                functions.logger.error("Webhook - Erro ao processar o webhook do Mercado Pago:", error);
                 response.status(500).send("Erro interno do servidor");
             }
         }
         else {
+            functions.logger.info(`Webhook - Requisição não é de pagamento ou paymentId ausente. Topic: ${topic}, Payment ID: ${paymentId}`);
             response.status(200).send("OK (non-payment topic)");
         }
     });

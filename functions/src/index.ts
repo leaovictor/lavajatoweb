@@ -105,14 +105,16 @@ export const createPreference = functions.https.onCall(async (data, context) => 
 
 // --- FUNÇÃO 2: WEBHOOK DO MERCADO PAGO (Sem alterações significativas) ---
 export const mercadoPagoWebhook = functions.https.onRequest(async (request, response) => {
-  corsHandler(request, response, async () => { 
-    functions.logger.info("Webhook do Mercado Pago recebido!", { query: request.query, body: request.body });
+  corsHandler(request, response, async () => {
+    const query = request.query;
+    const body = request.body;
 
-    const { query } = request;
-    const topic = query.topic || query.type;
-    const paymentId = query.id || (query["data.id"] as string | undefined);
+    // Unifica a extração de dados do 'body' (prioridade) e 'query' (fallback)
+    const topic = body?.topic || body?.type || query.topic || query.type;
+    const paymentId = body?.data?.id || query.id || (query["data.id"] as string | undefined);
 
-    functions.logger.info(`Webhook - Topic: ${topic}, Payment ID recebido: ${paymentId}`); // NOVO LOG
+    functions.logger.info("Webhook do Mercado Pago recebido!", { query: query, body: body });
+    functions.logger.info(`Webhook - Topic extraído: ${topic}, Payment ID extraído: ${paymentId}`);
 
     if (topic === "payment" && paymentId) {
       try {
