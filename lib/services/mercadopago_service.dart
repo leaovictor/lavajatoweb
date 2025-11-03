@@ -3,24 +3,25 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lavajato/mercadopago_keys.dart';
 
+import 'package:lavajato/services/plan_service.dart';
+// ... (rest of your imports)
+
 class MercadoPagoService {
-  Future<Map<String, dynamic>> createPreference(String plan) async {
+  final PlanService _planService = PlanService();
+
+  Future<Map<String, dynamic>> createPreference(String planName, String userId) async {
     final url = Uri.parse('https://api.mercadopago.com/checkout/preferences');
 
-    final Map<String, double> prices = {
-      'basic': 29.90,
-      'premium': 59.90,
-    };
-    final price = prices[plan];
-    if (price == null) throw Exception('Invalid plan');
+    final plan = await _planService.getPlanByName(planName);
+    if (plan == null) throw Exception('Invalid plan');
 
     final body = {
       "items": [
         {
-          "title": "Assinatura ${plan == 'basic' ? 'Básica' : 'Premium'}",
+          "title": "Assinatura ${plan.name}",
           "quantity": 1,
           "currency_id": "BRL",
-          "unit_price": price,
+          "unit_price": plan.price,
         }
       ],
       "payer": {
@@ -32,6 +33,7 @@ class MercadoPagoService {
         "pending": "https://www.pending.com",
       },
       "auto_return": "approved",
+      "external_reference": userId,
     };
 
     final response = await http.post(
@@ -45,10 +47,9 @@ class MercadoPagoService {
 
     if (response.statusCode == 201) {
       final responseBody = jsonDecode(response.body);
-      // Para ambiente de sandbox, use a URL 'sandbox_init_point'
-      final checkoutUrl = responseBody['sandbox_init_point'];
+      final checkoutUrl = responseBody['init_point'];
       if (checkoutUrl == null) {
-        throw Exception('sandbox_init_point not found in Mercado Pago response');
+        throw Exception('init_point not found in Mercado Pago response');
       }
       return {'checkoutUrl': checkoutUrl};
     } else {

@@ -6,6 +6,8 @@ class Client {
   final String email;
   final String phone;
   final String? subscriptionStatus;
+  final String? subscriptionPlan;
+  final DateTime? subscriptionDate;
   final String rule;
 
   Client({
@@ -14,6 +16,8 @@ class Client {
     required this.email,
     required this.phone,
     this.subscriptionStatus,
+    this.subscriptionPlan,
+    this.subscriptionDate,
     this.rule = 'usuario',
   });
 
@@ -25,6 +29,8 @@ class Client {
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
       subscriptionStatus: data['subscriptionStatus'],
+      subscriptionPlan: data['subscriptionPlan'],
+      subscriptionDate: data['subscriptionDate'] != null ? (data['subscriptionDate'] as Timestamp).toDate() : null,
       rule: data['rule'] ?? 'usuario',
     );
   }

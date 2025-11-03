@@ -5,6 +5,7 @@ import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/services/firestore_service.dart';
 import 'package:lavajato/services/notification_service.dart';
+import 'package:lavajato/screens/subscription/subscription_screen.dart'; // Importe a tela de assinatura
 import 'package:table_calendar/table_calendar.dart';
 
 class AppointmentScreen extends StatefulWidget {
@@ -36,9 +37,46 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Você precisa estar logado para agendar.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Você precisa estar logado para agendar.')),
+        );
+      }
+      return;
+    }
+
+    // Verificar status da assinatura
+    final clientStream = _firestoreService.getUser(user.uid);
+    final client = await clientStream.first;
+
+    if (client.subscriptionStatus != 'active') {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Assinatura Inativa'),
+            content: const Text('Você precisa de uma assinatura ativa para realizar agendamentos.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SubscriptionScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Ver Planos'),
+              ),
+            ],
+          ),
+        );
+      }
       return;
     }
 

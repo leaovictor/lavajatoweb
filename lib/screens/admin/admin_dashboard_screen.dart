@@ -8,6 +8,8 @@ import 'package:lavajato/models/client_model.dart';
 import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/screens/admin/add_service_screen.dart';
 import 'package:lavajato/screens/admin/customer_list_screen.dart';
+import 'package:lavajato/screens/admin/edit_plan_screen.dart';
+import 'package:lavajato/screens/admin/manage_plans_screen.dart';
 import 'package:lavajato/services/firestore_service.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
@@ -24,7 +26,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -44,6 +46,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             Tab(icon: Icon(Icons.calendar_today), text: 'Agendamentos do Dia'),
             Tab(icon: Icon(Icons.people), text: 'Assinantes Ativos'),
             Tab(icon: Icon(Icons.local_car_wash), text: 'Serviços'),
+            Tab(icon: Icon(Icons.star), text: 'Planos'),
             Tab(icon: Icon(Icons.person), text: 'Clientes'),
           ],
         ),
@@ -54,28 +57,38 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
           _DailyAppointmentsView(),
           _ActiveSubscribersView(),
           _ServicesView(),
+          const ManagePlansScreen(),
           const CustomerListScreen(),
         ],
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _tabController,
         builder: (context, child) {
-          return _tabController.index == 2 || _tabController.index == 3
-              ? FloatingActionButton(
-                  onPressed: () {
-                    if (_tabController.index == 2) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const AddServiceScreen(),
-                        ),
-                      );
-                    } else if (_tabController.index == 3) {
-                      // TODO: Add functionality for adding customers
-                    }
-                  },
-                  child: const Icon(Icons.add),
-                )
-              : const SizedBox.shrink();
+          if (_tabController.index == 2) {
+            return FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AddServiceScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
+            );
+          }
+          if (_tabController.index == 3) {
+            return FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const EditPlanScreen(),
+                  ),
+                );
+              },
+              child: const Icon(Icons.add),
+            );
+          }
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -371,4 +384,3 @@ class _ServicesView extends StatelessWidget {
     );
   }
 }
-

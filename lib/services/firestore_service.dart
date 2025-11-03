@@ -69,12 +69,13 @@ class FirestoreService {
     }
   }
 
-  Future<void> addAppointment(Appointment appointment) async {
+  Future<DocumentReference> addAppointment(Appointment appointment) async {
     try {
-      await _db.collection('agendamentos').add(appointment.toMap());
+      return await _db.collection('agendamentos').add(appointment.toMap());
     } catch (e) {
       print(e);
       // Handle errors appropriately
+      rethrow;
     }
   }
 
@@ -97,6 +98,7 @@ class FirestoreService {
       await _db.collection('clientes').doc(uid).update({
         'subscriptionStatus': status,
         'subscriptionPlan': plan,
+        'subscriptionDate': FieldValue.serverTimestamp(),
       });
     } catch (e) {
       print(e);
