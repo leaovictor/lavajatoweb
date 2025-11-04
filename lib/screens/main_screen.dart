@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
-import 'package:lavajato/services/auth_service.dart';
+import 'package:lavajato/data/services/auth_service.dart';
+import 'package:lavajato/theme/theme_notifier.dart';
+import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -31,6 +33,17 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? 'Serviços' : 'Meus Agendamentos'),
         actions: [
+          IconButton(
+            icon: Icon(
+              Provider.of<ThemeNotifier>(context).themeMode == ThemeMode.dark
+                  ? Icons.dark_mode
+                  : Icons.light_mode,
+            ),
+            onPressed: () {
+              Provider.of<ThemeNotifier>(context, listen: false).toggleTheme();
+            },
+            tooltip: 'Mudar Tema',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

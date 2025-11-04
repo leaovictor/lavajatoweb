@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/models/service_model.dart';
-import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/data/services/firestore_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class SchedulingScreen extends StatefulWidget {
