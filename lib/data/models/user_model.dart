@@ -7,11 +7,15 @@ class UserModel extends UserEntity {
     required String name,
     required String email,
     String? photoUrl,
+    String? phone,
+    String? address,
   }) : super(
           id: id,
           name: name,
           email: email,
           photoUrl: photoUrl,
+          phone: phone,
+          address: address,
         );
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -21,6 +25,8 @@ class UserModel extends UserEntity {
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       photoUrl: data['photoUrl'],
+      phone: data['phone'],
+      address: data['address'],
     );
   }
 
@@ -29,6 +35,8 @@ class UserModel extends UserEntity {
       'name': name,
       'email': email,
       'photoUrl': photoUrl,
+      'phone': phone,
+      'address': address,
     };
   }
 }

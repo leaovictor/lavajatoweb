@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lavajato/data/models/car_model.dart';
 import 'package:lavajato/data/models/user_model.dart';
 
 class FirestoreService {
@@ -10,6 +11,18 @@ class FirestoreService {
 
   Stream<DocumentSnapshot> getUser(String userId) {
     return _db.collection('users').doc(userId).snapshots();
+  }
+
+  Future<void> updateUserProfile(String userId, Map<String, dynamic> data) {
+    return _db.collection('users').doc(userId).update(data);
+  }
+
+  Future<void> addCar(String userId, CarModel car) {
+    return _db.collection('users').doc(userId).collection('cars').add(car.toMap());
+  }
+
+  Stream<QuerySnapshot> getCars(String userId) {
+    return _db.collection('users').doc(userId).collection('cars').snapshots();
   }
 
   Stream<QuerySnapshot> getServices() {

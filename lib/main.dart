@@ -6,7 +6,6 @@ import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/auth_gate.dart';
 import 'package:lavajato/theme/app_theme.dart';
-import 'package:lavajato/theme/theme_notifier.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -15,11 +14,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
-        Provider<AuthRepository>(create: (_) => AuthRepositoryImpl()),
-      ],
+    Provider<AuthRepository>(
+      create: (_) => AuthRepositoryImpl(),
       child: const MyApp(),
     ),
   );
@@ -30,25 +26,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeNotifier>(
-      builder: (context, themeNotifier, child) {
-        return MaterialApp(
-          title: 'LavaJato App',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeNotifier.themeMode,
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('pt', 'BR'),
-          ],
-          locale: const Locale('pt', 'BR'),
-          home: const AuthGate(),
-        );
-      },
+    return MaterialApp(
+      title: 'LavaJato App',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system, // Revert to system theme
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('pt', 'BR'),
+      ],
+      locale: const Locale('pt', 'BR'),
+      home: const AuthGate(),
     );
   }
 }

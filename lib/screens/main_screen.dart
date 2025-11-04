@@ -3,6 +3,7 @@ import 'package:lavajato/data/repositories/auth_repository_impl.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
+import 'package:lavajato/screens/profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -32,6 +33,15 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? 'Serviços' : 'Meus Agendamentos'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            tooltip: 'Perfil',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

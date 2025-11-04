@@ -1,7 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:lavajato/data/models/car_model.dart';
 import 'package:lavajato/data/models/user_model.dart';
 import 'package:lavajato/data/services/auth_service.dart';
 import 'package:lavajato/data/services/firestore_service.dart';
+import 'package:lavajato/domain/entities/car_entity.dart';
 import 'package:lavajato/domain/entities/user_entity.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:rxdart/rxdart.dart';
@@ -73,5 +76,32 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> signOut() {
     return _authService.signOut();
+  }
+
+  @override
+  Future<void> updateUserProfile(String userId, String name, String phone, String address) {
+    return _firestoreService.updateUserProfile(userId, {
+      'name': name,
+      'phone': phone,
+      'address': address,
+    });
+  }
+
+  @override
+  Future<void> addCar(String userId, CarEntity car) {
+    final carModel = CarModel(
+      id: car.id,
+      brand: car.brand,
+      model: car.model,
+      licensePlate: car.licensePlate,
+    );
+    return _firestoreService.addCar(userId, carModel);
+  }
+
+  @override
+  Stream<List<CarEntity>> getCars(String userId) {
+    return _firestoreService.getCars(userId).map((snapshot) {
+      return snapshot.docs.map((doc) => CarModel.fromFirestore(doc)).toList();
+    });
   }
 }
