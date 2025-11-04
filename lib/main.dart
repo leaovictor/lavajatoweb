@@ -16,12 +16,12 @@ void main() async {
   );
 
   // 2. Initialize Stripe
-  // The 'flutter_stripe' package relies on platform-specific code (using dart:io/Platform)
-  // for initialization on mobile/desktop. This causes a crash on Flutter Web.
-  // We must wrap the initialization logic in an 'if (!kIsWeb)' check to prevent the crash.
+  // Set the publishable key for all platforms.
+  Stripe.publishableKey = stripePublishableKey;
+
+  // The `applySettings` method is only available on mobile/desktop and will
+  // crash on Flutter Web. We use a conditional check to avoid this.
   if (!kIsWeb) {
-    // This block runs ONLY on mobile/desktop.
-    Stripe.publishableKey = stripePublishableKey;
     await Stripe.instance.applySettings();
   }
   
