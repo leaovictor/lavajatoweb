@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:lavajato/data/repositories/auth_repository_impl.dart';
+import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/auth_gate.dart';
 import 'package:lavajato/theme/app_theme.dart';
@@ -13,8 +15,11 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        Provider<AuthRepository>(create: (_) => AuthRepositoryImpl()),
+      ],
       child: const MyApp(),
     ),
   );

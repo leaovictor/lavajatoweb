@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lavajato/data/repositories/auth_repository_impl.dart';
+import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
-import 'package:lavajato/data/services/auth_service.dart';
-import 'package:lavajato/theme/theme_notifier.dart';
-import 'package:provider/provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,7 +13,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final AuthService _authService = AuthService();
+  final AuthRepository _authRepository = AuthRepositoryImpl();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -34,20 +33,9 @@ class _MainScreenState extends State<MainScreen> {
         title: Text(_selectedIndex == 0 ? 'Serviços' : 'Meus Agendamentos'),
         actions: [
           IconButton(
-            icon: Icon(
-              Provider.of<ThemeNotifier>(context).themeMode == ThemeMode.dark
-                  ? Icons.dark_mode
-                  : Icons.light_mode,
-            ),
-            onPressed: () {
-              Provider.of<ThemeNotifier>(context, listen: false).toggleTheme();
-            },
-            tooltip: 'Mudar Tema',
-          ),
-          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              _authService.signOut();
+              _authRepository.signOut();
             },
             tooltip: 'Sair',
           ),

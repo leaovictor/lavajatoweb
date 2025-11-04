@@ -4,6 +4,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  Stream<User?> get user => _auth.authStateChanges();
+
+  // Create user with email and password
+  Future<UserCredential> createUserWithEmailAndPassword(
+      String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(
+        email: email, password: password);
+  }
+
   // Sign in with email and password
   Future<UserCredential> signInWithEmailAndPassword(
       String email, String password) async {

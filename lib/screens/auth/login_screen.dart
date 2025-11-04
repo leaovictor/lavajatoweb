@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:lavajato/data/services/auth_service.dart';
+import 'package:lavajato/domain/repositories/auth_repository.dart';
+import 'package:lavajato/screens/auth/registration_screen.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -10,17 +12,23 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
+  late final AuthRepository _authRepository;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _authRepository = Provider.of<AuthRepository>(context, listen: false);
+  }
 
   void _signInWithEmailAndPassword() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      await _authService.signInWithEmailAndPassword(
+      await _authRepository.signInWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
       );
@@ -44,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
     try {
-      await _authService.signInWithGoogle();
+      await _authRepository.signInWithGoogle();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -130,7 +138,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () {
-                          // TODO: Navigate to registration screen
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const RegistrationScreen(),
+                            ),
+                          );
                         },
                         child: const Text('Não tem uma conta? Cadastre-se'),
                       ),
