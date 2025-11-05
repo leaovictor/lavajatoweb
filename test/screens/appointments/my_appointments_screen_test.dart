@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
-import 'package.flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
+import 'package:lavajato/screens/booking/select_service_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
 import 'package:lavajato/services/auth_service.dart';
 
@@ -29,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedIndex == 0 ? 'Serviços' : 'Meus Agendamentos'),
+        title: Text(_selectedIndex == 0 ? 'Início' : 'Meus Agendamentos'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -58,7 +59,7 @@ class _MainScreenState extends State<MainScreen> {
                   destinations: const <NavigationRailDestination>[
                     NavigationRailDestination(
                       icon: Icon(Icons.home),
-                      label: Text('Serviços'),
+                      label: Text('Início'),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.calendar_today),
@@ -77,12 +78,25 @@ class _MainScreenState extends State<MainScreen> {
           }
         },
       ),
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SelectServiceScreen(),
+                  ),
+                );
+              },
+              label: const Text('Novo Agendamento'),
+              icon: const Icon(Icons.add),
+            )
+          : null,
       bottomNavigationBar: MediaQuery.of(context).size.width < 600
           ? BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
                   icon: Icon(Icons.home),
-                  label: 'Serviços',
+                  label: 'Início',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.calendar_today),
