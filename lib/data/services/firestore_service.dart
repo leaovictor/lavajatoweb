@@ -27,4 +27,8 @@ class FirestoreService {
         .orderBy('startTime')
         .snapshots();
   }
+
+  Stream<QuerySnapshot> getSubscriptionPlans() {
+    return _db.collection('plans').snapshots();
+  }
 }

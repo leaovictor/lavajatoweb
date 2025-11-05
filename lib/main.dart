@@ -13,6 +13,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  Stripe.publishableKey = 'pk_test_YOUR_PUBLISHABLE_KEY'; // Replace with your key
+
   runApp(
     Provider<AuthRepository>(
       create: (_) => AuthRepositoryImpl(),
