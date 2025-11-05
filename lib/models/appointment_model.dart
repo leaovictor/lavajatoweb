@@ -9,6 +9,7 @@ class Appointment {
   final DateTime endTime;
   final String? carId;
   final String? carInfo;
+  final String status;
 
   Appointment({
     required this.id,
@@ -19,6 +20,7 @@ class Appointment {
     required this.endTime,
     this.carId,
     this.carInfo,
+    this.status = 'Confirmado',
   });
 
   // Factory constructor to create an Appointment from a map (e.g., from Firestore)
@@ -33,6 +35,7 @@ class Appointment {
       endTime: (data['endTime'] as Timestamp).toDate(),
       carId: data['carId'],
       carInfo: data['carInfo'],
+      status: data['status'] ?? 'Confirmado',
     );
   }
 
@@ -46,6 +49,7 @@ class Appointment {
       'endTime': Timestamp.fromDate(endTime),
       'carId': carId,
       'carInfo': carInfo,
+      'status': status,
     };
   }
 }
