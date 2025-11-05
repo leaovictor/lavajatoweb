@@ -4,29 +4,26 @@ import 'package:lavajato/domain/entities/user_entity.dart';
 class UserModel extends UserEntity {
   UserModel({
     required String id,
-    required String name,
     required String email,
+    String? name,
     String? photoUrl,
-    String? phone,
-    String? address,
+    bool isAdmin = false,
   }) : super(
           id: id,
-          name: name,
           email: email,
+          name: name,
           photoUrl: photoUrl,
-          phone: phone,
-          address: address,
+          isAdmin: isAdmin,
         );
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UserModel(
       id: doc.id,
-      name: data['name'] ?? '',
+      name: data['name'],
       email: data['email'] ?? '',
       photoUrl: data['photoUrl'],
-      phone: data['phone'],
-      address: data['address'],
+      isAdmin: data['isAdmin'] ?? false,
     );
   }
 
@@ -35,8 +32,7 @@ class UserModel extends UserEntity {
       'name': name,
       'email': email,
       'photoUrl': photoUrl,
-      'phone': phone,
-      'address': address,
+      'isAdmin': isAdmin,
     };
   }
 }

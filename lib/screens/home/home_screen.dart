@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package/lavajato/models/service_model.dart';
+import 'package:lavajato/models/service_model.dart';
 import 'package:lavajato/screens/scheduling/scheduling_screen.dart';
-import 'package:lavajato/data/services/firestore_service.dart';
+import 'package:lavajato/services/firestore_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

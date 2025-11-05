@@ -1,11 +1,10 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lavajato/data/repositories/auth_repository_impl.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/firebase_options.dart';
-import 'package:lavajato/screens/auth_gate.dart';
+import 'package:lavajato/services/auth_gate.dart';
 import 'package:lavajato/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -14,10 +13,6 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // Set Stripe publishable key
-  Stripe.publishableKey = 'pk_test_YOUR_PUBLISHABLE_KEY'; // Replace with your key
-
   runApp(
     Provider<AuthRepository>(
       create: (_) => AuthRepositoryImpl(),

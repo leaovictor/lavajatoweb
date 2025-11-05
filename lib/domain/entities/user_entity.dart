@@ -1,17 +1,15 @@
 class UserEntity {
   final String id;
-  final String name;
   final String email;
+  final String? name;
   final String? photoUrl;
-  final String? phone;
-  final String? address;
+  final bool isAdmin;
 
   UserEntity({
     required this.id,
-    required this.name,
     required this.email,
+    this.name,
     this.photoUrl,
-    this.phone,
-    this.address,
+    this.isAdmin = false,
   });
 }

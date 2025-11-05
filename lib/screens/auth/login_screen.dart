@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:lavajato/domain/repositories/auth_repository.dart';
-import 'package:lavajato/screens/auth/registration_screen.dart';
-import 'package:provider/provider.dart';
+import 'package:lavajato/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,23 +10,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  late final AuthRepository _authRepository;
+  final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _authRepository = Provider.of<AuthRepository>(context, listen: false);
-  }
 
   void _signInWithEmailAndPassword() async {
     setState(() {
       _isLoading = true;
     });
     try {
-      await _authRepository.signInWithEmailAndPassword(
+      await _authService.signInWithEmailAndPassword(
         _emailController.text,
         _passwordController.text,
       );
@@ -52,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
     try {
-      await _authRepository.signInWithGoogle();
+      await _authService.signInWithGoogle();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -138,11 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const RegistrationScreen(),
-                            ),
-                          );
+                          // TODO: Navigate to registration screen
                         },
                         child: const Text('Não tem uma conta? Cadastre-se'),
                       ),

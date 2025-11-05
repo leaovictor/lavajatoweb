@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/appointment_model.dart';
-import 'package:lavajato/data/services/firestore_service.dart';
+import 'package:lavajato/services/firestore_service.dart';
+import 'package:lavajato/screens/home/home_screen.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   const MyAppointmentsScreen({super.key});
@@ -29,7 +30,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
         title: const Text('Meus Agendamentos'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestoreService.getMyAppointments(_user!.uid),
+        stream: _firestoreService.getMyAppointments(_user.uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Erro ao carregar agendamentos.'));
@@ -43,69 +44,47 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             return const Center(child: Text('Você não possui agendamentos.'));
           }
 
-          final allAppointments = snapshot.data!.docs
+          final appointments = snapshot.data!.docs
               .map((doc) => Appointment.fromFirestore(doc))
               .toList();
 
-          final upcomingAppointments = allAppointments.where((a) => a.startTime.isAfter(DateTime.now())).toList();
-          final pastAppointments = allAppointments.where((a) => a.startTime.isBefore(DateTime.now())).toList();
+          return ListView.builder(
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              final appointment = appointments[index];
+              final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
+              final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
 
-          return ListView(
-            padding: const EdgeInsets.all(8.0),
-            children: [
-              if (upcomingAppointments.isNotEmpty)
-                _buildSectionTitle('Próximos Agendamentos'),
-              ...upcomingAppointments.map((app) => _buildAppointmentCard(app)),
-
-              if (pastAppointments.isNotEmpty)
-                _buildSectionTitle('Agendamentos Passados'),
-              ...pastAppointments.map((app) => _buildAppointmentCard(app)),
-            ],
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(
+                    appointment.serviceName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('Em $formattedDate às $formattedTime'),
+                  leading: Icon(
+                    appointment.startTime.isBefore(DateTime.now())
+                        ? Icons.check_circle
+                        : Icons.history,
+                    color: appointment.startTime.isBefore(DateTime.now())
+                        ? Colors.green
+                        : Colors.blue,
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildAppointmentCard(Appointment appointment) {
-    final formattedDate = DateFormat('dd/MM/yyyy').format(appointment.startTime);
-    final formattedTime = DateFormat('HH:mm').format(appointment.startTime);
-    final isPast = appointment.startTime.isBefore(DateTime.now());
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      elevation: 2,
-      child: ListTile(
-        title: Text(
-          appointment.serviceName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Data: $formattedDate às $formattedTime'),
-            if (appointment.carInfo != null && appointment.carInfo!.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Text('Veículo: ${appointment.carInfo}'),
-              ),
-          ],
-        ),
-        leading: Icon(
-          isPast ? Icons.check_circle_outline : Icons.watch_later_outlined,
-          color: isPast ? Colors.green : Theme.of(context).colorScheme.secondary,
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
