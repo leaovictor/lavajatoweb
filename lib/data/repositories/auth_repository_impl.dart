@@ -1,4 +1,4 @@
-import 'package:lavajato/data/models/user_model.dart';
+import 'package.lavajato/data/models/user_model.dart';
 import 'package:lavajato/data/services/auth_service.dart';
 import 'package:lavajato/data/services/firestore_service.dart';
 import 'package:lavajato/domain/entities/user_entity.dart';

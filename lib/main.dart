@@ -1,9 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:lavajato/data/repositories/appointment_repository_impl.dart';
 import 'package:lavajato/data/repositories/auth_repository_impl.dart';
+import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/firebase_options.dart';
+import 'package:lavajato/screens/main_screen.dart';
 import 'package:lavajato/services/auth_gate.dart';
 import 'package:lavajato/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -13,11 +18,20 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Set Stripe publishable key
   Stripe.publishableKey = 'pk_test_YOUR_PUBLISHABLE_KEY'; // Replace with your key
 
   runApp(
-    Provider<AuthRepository>(
-      create: (_) => AuthRepositoryImpl(),
+    MultiProvider(
+      providers: [
+        Provider<AuthRepository>(
+          create: (_) => AuthRepositoryImpl(),
+        ),
+        Provider<AppointmentRepository>(
+          create: (_) => AppointmentRepositoryImpl(FirebaseFirestore.instance),
+        ),
+      ],
       child: const MyApp(),
     ),
   );
