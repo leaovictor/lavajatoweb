@@ -21,9 +21,28 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
           .map((doc) => AppointmentModel.fromFirestore(doc))
           .toList();
     } catch (e) {
-      // It's a good practice to handle errors, e.g., by logging them
-      // or rethrowing a more specific exception.
-      print('Error fetching appointments: $e');
+      print('Error fetching user appointments: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<AppointmentEntity>> getAppointmentsForDay(DateTime date) async {
+    try {
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final querySnapshot = await _firestore
+          .collection('agendamentos')
+          .where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('startTime', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => AppointmentModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      print('Error fetching appointments for day: $e');
       rethrow;
     }
   }

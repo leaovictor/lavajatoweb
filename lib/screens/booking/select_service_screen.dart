@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lavajato/screens/booking/select_date_time_screen.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/service_entity.dart';
 import '../../domain/repositories/service_repository.dart';
@@ -53,7 +54,11 @@ class _SelectServiceScreenState extends State<SelectServiceScreen> {
                     'Preço: R\$${service.price.toStringAsFixed(2)} - Duração: ${service.durationInMinutes} min'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                  // TODO: Navigate to the date and time selection screen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => SelectDateTimeScreen(service: service),
+                    ),
+                  );
                 },
               );
             },
