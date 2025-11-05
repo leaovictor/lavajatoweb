@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/models/appointment_model.dart';
 import 'package:lavajato/data/services/firestore_service.dart';
-import 'package:lavajato/screens/home/home_screen.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   const MyAppointmentsScreen({super.key});
@@ -30,7 +29,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
         title: const Text('Meus Agendamentos'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestoreService.getMyAppointments(_user.uid),
+        stream: _firestoreService.getMyAppointments(_user!.uid),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Text('Erro ao carregar agendamentos.'));
@@ -62,7 +61,14 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                     appointment.serviceName,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('Em $formattedDate às $formattedTime'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Data: $formattedDate às $formattedTime'),
+                      if (appointment.carInfo != null)
+                        Text('Veículo: ${appointment.carInfo}'),
+                    ],
+                  ),
                   leading: Icon(
                     appointment.startTime.isBefore(DateTime.now())
                         ? Icons.check_circle
@@ -76,15 +82,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

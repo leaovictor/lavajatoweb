@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lavajato/data/repositories/auth_repository_impl.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/firebase_options.dart';
@@ -13,6 +14,10 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Set Stripe publishable key
+  Stripe.publishableKey = 'pk_test_YOUR_PUBLISHABLE_KEY'; // Replace with your key
+
   runApp(
     Provider<AuthRepository>(
       create: (_) => AuthRepositoryImpl(),
@@ -30,7 +35,7 @@ class MyApp extends StatelessWidget {
       title: 'LavaJato App',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Revert to system theme
+      themeMode: ThemeMode.system,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
