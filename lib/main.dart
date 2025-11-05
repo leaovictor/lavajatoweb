@@ -6,8 +6,10 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:lavajato/data/repositories/appointment_repository_impl.dart';
 import 'package:lavajato/data/repositories/auth_repository_impl.dart';
 import 'package:lavajato/data/repositories/service_repository_impl.dart';
+import 'package:lavajato/data/repositories/plan_repository_impl.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
+import 'package:lavajato/domain/repositories/plan_repository.dart';
 import 'package:lavajato/domain/repositories/service_repository.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/main_screen.dart';
@@ -35,6 +37,9 @@ void main() async {
         ),
         Provider<ServiceRepository>(
           create: (_) => ServiceRepositoryImpl(FirebaseFirestore.instance),
+        ),
+        Provider<PlanRepository>(
+          create: (_) => PlanRepositoryImpl(FirebaseFirestore.instance),
         ),
       ],
       child: const MyApp(),

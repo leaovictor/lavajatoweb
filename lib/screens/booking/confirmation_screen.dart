@@ -4,6 +4,7 @@ import 'package:lavajato/domain/entities/appointment_entity.dart';
 import 'package:lavajato/domain/entities/service_entity.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
+import 'package:lavajato/widgets/summary_row.dart';
 import 'package:provider/provider.dart';
 
 class ConfirmationScreen extends StatefulWidget {
@@ -95,17 +96,17 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 24),
-                    _buildSummaryRow('Serviço:', widget.service.name),
+                    SummaryRow(label: 'Serviço:', value: widget.service.name),
                     const Divider(height: 24),
-                    _buildSummaryRow('Data:', formattedDate),
+                    SummaryRow(label: 'Data:', value: formattedDate),
                     const Divider(height: 24),
-                    _buildSummaryRow('Hora:', formattedTime),
+                    SummaryRow(label: 'Hora:', value: formattedTime),
                     const Divider(height: 24),
-                    _buildSummaryRow('Duração:', '${widget.service.durationInMinutes} min'),
+                    SummaryRow(label: 'Duração:', value: '${widget.service.durationInMinutes} min'),
                     const Divider(height: 24),
-                    _buildSummaryRow(
-                      'Preço:',
-                      'R\$ ${widget.service.price.toStringAsFixed(2)}',
+                    SummaryRow(
+                      label: 'Preço:',
+                      value: 'R\$ ${widget.service.price.toStringAsFixed(2)}',
                       isTotal: true,
                     ),
                   ],
@@ -125,25 +126,6 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
     );
   }
 }

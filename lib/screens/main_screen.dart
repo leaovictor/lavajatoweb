@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/booking/select_service_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
+import 'package:lavajato/screens/subscription/subscription_screen.dart';
 import 'package:lavajato/services/auth_service.dart';
 
 class MainScreen extends StatefulWidget {
@@ -26,11 +27,18 @@ class _MainScreenState extends State<MainScreen> {
     final List<Widget> widgetOptions = <Widget>[
       const HomeScreen(),
       const MyAppointmentsScreen(),
+      const SubscriptionScreen(),
+    ];
+
+    final List<String> titles = <String>[
+      'Início',
+      'Meus Agendamentos',
+      'Assinatura',
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_selectedIndex == 0 ? 'Início' : 'Meus Agendamentos'),
+        title: Text(titles[_selectedIndex]),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -64,6 +72,10 @@ class _MainScreenState extends State<MainScreen> {
                     NavigationRailDestination(
                       icon: Icon(Icons.calendar_today),
                       label: Text('Agendamentos'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.subscriptions),
+                      label: Text('Assinatura'),
                     ),
                   ],
                 ),
@@ -101,6 +113,10 @@ class _MainScreenState extends State<MainScreen> {
                 BottomNavigationBarItem(
                   icon: Icon(Icons.calendar_today),
                   label: 'Agendamentos',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.subscriptions),
+                  label: 'Assinatura',
                 ),
               ],
               currentIndex: _selectedIndex,
