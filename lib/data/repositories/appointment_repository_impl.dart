@@ -9,6 +9,24 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   AppointmentRepositoryImpl(this._firestore);
 
   @override
+  Future<void> createAppointment(AppointmentEntity appointment) async {
+    try {
+      final appointmentModel = AppointmentModel(
+        userId: appointment.userId,
+        serviceId: appointment.serviceId,
+        serviceName: appointment.serviceName,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        status: appointment.status,
+      );
+      await _firestore.collection('agendamentos').add(appointmentModel.toFirestore());
+    } catch (e) {
+      print('Error creating appointment: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<List<AppointmentEntity>> getUserAppointments(String userId) async {
     try {
       final querySnapshot = await _firestore

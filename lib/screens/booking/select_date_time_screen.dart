@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lavajato/domain/entities/appointment_entity.dart';
 import 'package:lavajato/domain/entities/service_entity.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
+import 'package:lavajato/screens/booking/confirmation_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -182,7 +183,14 @@ class _SelectDateTimeScreenState extends State<SelectDateTimeScreen> {
                 onPressed: _selectedTimeSlot == null
                     ? null
                     : () {
-                        // TODO: Navigate to confirmation screen
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ConfirmationScreen(
+                              service: widget.service,
+                              selectedDateTime: _selectedTimeSlot!,
+                            ),
+                          ),
+                        );
                       },
                 child: const Text('Avançar para Confirmação'),
               ),

@@ -3,7 +3,9 @@ import '../../domain/entities/appointment_entity.dart';
 
 class AppointmentModel extends AppointmentEntity {
   AppointmentModel({
-    required super.id,
+    super.id,
+    required super.userId,
+    required super.serviceId,
     required super.serviceName,
     required super.startTime,
     required super.endTime,
@@ -14,6 +16,8 @@ class AppointmentModel extends AppointmentEntity {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return AppointmentModel(
       id: doc.id,
+      userId: data['userId'] ?? '',
+      serviceId: data['serviceId'] ?? '',
       serviceName: data['serviceName'] ?? '',
       startTime: (data['startTime'] as Timestamp).toDate(),
       endTime: (data['endTime'] as Timestamp).toDate(),
@@ -23,6 +27,8 @@ class AppointmentModel extends AppointmentEntity {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'userId': userId,
+      'serviceId': serviceId,
       'serviceName': serviceName,
       'startTime': Timestamp.fromDate(startTime),
       'endTime': Timestamp.fromDate(endTime),
