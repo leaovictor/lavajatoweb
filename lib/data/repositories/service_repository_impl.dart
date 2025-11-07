@@ -1,23 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/entities/service_entity.dart';
-import '../../domain/repositories/service_repository.dart';
-import '../models/service_model.dart';
+import 'package:lavajato/data/models/service_model.dart';
+import 'package:lavajato/data/services/firestore_service.dart';
+import 'package:lavajato/domain/entities/service_entity.dart';
+import 'package:lavajato/domain/repositories/service_repository.dart';
 
 class ServiceRepositoryImpl implements ServiceRepository {
-  final FirebaseFirestore _firestore;
+  final FirestoreService _firestoreService;
 
-  ServiceRepositoryImpl(this._firestore);
+  ServiceRepositoryImpl({FirestoreService? firestoreService})
+      : _firestoreService = firestoreService ?? FirestoreService();
 
   @override
   Future<List<ServiceEntity>> getServices() async {
-    try {
-      final querySnapshot = await _firestore.collection('servicos').get();
-      return querySnapshot.docs
-          .map((doc) => ServiceModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      print('Error fetching services: $e');
-      rethrow;
-    }
+    final snapshot = await _firestoreService.getServices().first;
+    return snapshot.docs.map((doc) => ServiceModel.fromFirestore(doc)).toList();
   }
 }

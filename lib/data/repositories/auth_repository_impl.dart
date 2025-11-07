@@ -9,6 +9,7 @@ import 'package:rxdart/rxdart.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final AuthService _authService;
   final FirestoreService _firestoreService;
+  UserEntity? _currentUser;
 
   AuthRepositoryImpl({
     AuthService? authService,
@@ -17,9 +18,13 @@ class AuthRepositoryImpl implements AuthRepository {
         _firestoreService = firestoreService ?? FirestoreService();
 
   @override
+  UserEntity? get currentUser => _currentUser;
+
+  @override
   Stream<UserEntity?> get user {
     return _authService.user.switchMap((firebaseUser) {
       if (firebaseUser == null) {
+        _currentUser = null;
         return Stream.value(null);
       }
       return _firestoreService.getUser(firebaseUser.uid).map((snapshot) {
@@ -33,7 +38,7 @@ class AuthRepositoryImpl implements AuthRepository {
           name: firebaseUser.displayName,
           photoUrl: firebaseUser.photoURL,
         );
-      });
+      }).doOnData((user) => _currentUser = user);
     });
   }
 
