@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
-import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
+import 'package:lavajato/screens/admin/admin_dashboard_screen.dart';
 import 'package:lavajato/screens/booking/select_service_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
 import 'package:lavajato/screens/subscription/subscription_screen.dart';
@@ -41,6 +42,22 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, authState) {
+              if (authState.status == AuthStatus.authenticated && authState.user!.isAdmin) {
+                return IconButton(
+                  icon: const Icon(Icons.admin_panel_settings),
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => const AdminDashboardScreen(),
+                    ));
+                  },
+                  tooltip: 'Painel Administrativo',
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

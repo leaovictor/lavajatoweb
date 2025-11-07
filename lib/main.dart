@@ -10,9 +10,7 @@ import 'package:lavajato/data/repositories/plan_repository_impl.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/domain/repositories/plan_repository.dart';
-import 'package:lavajato/data/repositories/vehicle_repository_impl.dart';
 import 'package:lavajato/domain/repositories/service_repository.dart';
-import 'package:lavajato/domain/repositories/vehicle_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
 import 'package:lavajato/firebase_options.dart';
@@ -49,15 +47,6 @@ void main() async {
         ),
         Provider<PlanRepository>(
           create: (_) => PlanRepositoryImpl(FirebaseFirestore.instance),
-        ),
-        Provider<ServiceRepository>(
-          create: (_) => ServiceRepositoryImpl(),
-        ),
-        Provider<VehicleRepository>(
-          create: (context) => VehicleRepositoryImpl(
-            FirebaseFirestore.instance,
-            context.read<AuthRepository>(),
-          ),
         ),
       ],
       child: const MyApp(),
