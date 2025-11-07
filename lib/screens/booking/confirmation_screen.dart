@@ -1,35 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/domain/entities/appointment_entity.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lavajato/blocs/booking/booking_bloc.dart';
 import 'package:lavajato/domain/entities/service_entity.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/widgets/summary_row.dart';
 import 'package:provider/provider.dart';
 
-class ConfirmationScreen extends StatefulWidget {
-  final ServiceEntity service;
-  final DateTime selectedDateTime;
+class ConfirmationScreen extends StatelessWidget {
+  const ConfirmationScreen({super.key});
 
-  const ConfirmationScreen({
-    super.key,
-    required this.service,
-    required this.selectedDateTime,
-  });
-
-  @override
-  State<ConfirmationScreen> createState() => _ConfirmationScreenState();
-}
-
-class _ConfirmationScreenState extends State<ConfirmationScreen> {
-  bool _isCreatingAppointment = false;
-
-  Future<void> _confirmAppointment() async {
-    setState(() {
-      _isCreatingAppointment = true;
-    });
+  Future<void> _confirmAppointment(BuildContext context, ValueNotifier<bool> isCreatingAppointment) async {
+    isCreatingAppointment.value = true;
 
     try {
+      final bookingState = context.read<BookingBloc>().state;
       final authRepository = Provider.of<AuthRepository>(context, listen: false);
       final appointmentRepository = Provider.of<AppointmentRepository>(context, listen: false);
       final user = authRepository.currentUser;
@@ -37,44 +24,50 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
       if (user == null) {
         throw Exception('User not logged in');
       }
+      if (bookingState.service == null || bookingState.dateTime == null) {
+        throw Exception('Booking information is incomplete');
+      }
 
       final newAppointment = AppointmentEntity(
         userId: user.uid,
-        serviceId: widget.service.id,
-        serviceName: widget.service.name,
-        startTime: widget.selectedDateTime,
-        endTime: widget.selectedDateTime.add(Duration(minutes: widget.service.durationInMinutes)),
+        serviceId: bookingState.service!.id,
+        serviceName: bookingState.service!.name,
+        startTime: bookingState.dateTime!,
+        endTime: bookingState.dateTime!.add(Duration(minutes: bookingState.service!.durationInMinutes)),
         status: 'confirmed',
       );
 
       await appointmentRepository.createAppointment(newAppointment);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Agendamento confirmado com sucesso!')),
-        );
-        // Navigate back to the root of the navigation stack (main screen)
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agendamento confirmado com sucesso!')),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao confirmar agendamento: $e')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao confirmar agendamento: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isCreatingAppointment = false;
-        });
-      }
+      isCreatingAppointment.value = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat('dd/MM/yyyy').format(widget.selectedDateTime);
-    final formattedTime = DateFormat('HH:mm').format(widget.selectedDateTime);
+    final bookingState = context.watch<BookingBloc>().state;
+    final service = bookingState.service;
+    final selectedDateTime = bookingState.dateTime;
+
+    if (service == null || selectedDateTime == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Erro')),
+        body: const Center(child: Text('Informações do agendamento incompletas.')),
+      );
+    }
+
+    final formattedDate = DateFormat('dd/MM/yyyy').format(selectedDateTime);
+    final formattedTime = DateFormat('HH:mm').format(selectedDateTime);
+    final isCreatingAppointment = ValueNotifier<bool>(false);
 
     return Scaffold(
       appBar: AppBar(
@@ -96,17 +89,17 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 24),
-                    SummaryRow(label: 'Serviço:', value: widget.service.name),
+                    SummaryRow(label: 'Serviço:', value: service.name),
                     const Divider(height: 24),
                     SummaryRow(label: 'Data:', value: formattedDate),
                     const Divider(height: 24),
                     SummaryRow(label: 'Hora:', value: formattedTime),
                     const Divider(height: 24),
-                    SummaryRow(label: 'Duração:', value: '${widget.service.durationInMinutes} min'),
+                    SummaryRow(label: 'Duração:', value: '${service.durationInMinutes} min'),
                     const Divider(height: 24),
                     SummaryRow(
                       label: 'Preço:',
-                      value: 'R\$ ${widget.service.price.toStringAsFixed(2)}',
+                      value: 'R\$ ${service.price.toStringAsFixed(2)}',
                       isTotal: true,
                     ),
                   ],
@@ -114,14 +107,19 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
               ),
             ),
             const Spacer(),
-            ElevatedButton(
-              onPressed: _isCreatingAppointment ? null : _confirmAppointment,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: _isCreatingAppointment
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Confirmar Agendamento'),
+            ValueListenableBuilder<bool>(
+              valueListenable: isCreatingAppointment,
+              builder: (context, isLoading, child) {
+                return ElevatedButton(
+                  onPressed: isLoading ? null : () => _confirmAppointment(context, isCreatingAppointment),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Confirmar Agendamento'),
+                );
+              },
             ),
           ],
         ),

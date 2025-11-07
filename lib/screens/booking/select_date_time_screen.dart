@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lavajato/domain/entities/appointment_entity.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lavajato/blocs/booking/booking_bloc.dart';
 import 'package:lavajato/domain/entities/service_entity.dart';
 import 'package:lavajato/domain/repositories/appointment_repository.dart';
 import 'package:lavajato/screens/booking/confirmation_screen.dart';
@@ -8,11 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class SelectDateTimeScreen extends StatefulWidget {
-  final ServiceEntity service;
-
   const SelectDateTimeScreen({
     super.key,
-    required this.service,
   });
 
   @override
@@ -58,11 +57,15 @@ class _SelectDateTimeScreenState extends State<SelectDateTimeScreen> {
 
   List<DateTime> _generateAvailableTimeSlots(
       DateTime day, List<AppointmentEntity> bookedAppointments) {
+    final service = context.read<BookingBloc>().state.service;
+    if (service == null) {
+      return []; // Or handle this case appropriately
+    }
 
     // Define business hours (e.g., 9 AM to 5 PM)
     final startTime = DateTime(day.year, day.month, day.day, 9, 0);
     final endTime = DateTime(day.year, day.month, day.day, 17, 0);
-    final serviceDuration = Duration(minutes: widget.service.durationInMinutes);
+    final serviceDuration = Duration(minutes: service.durationInMinutes);
 
     final List<DateTime> slots = [];
     var currentTime = startTime;
@@ -183,11 +186,14 @@ class _SelectDateTimeScreenState extends State<SelectDateTimeScreen> {
                 onPressed: _selectedTimeSlot == null
                     ? null
                     : () {
+                        context
+                            .read<BookingBloc>()
+                            .add(DateTimeSelected(_selectedTimeSlot!));
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => ConfirmationScreen(
-                              service: widget.service,
-                              selectedDateTime: _selectedTimeSlot!,
+                            builder: (_) => BlocProvider.value(
+                              value: BlocProvider.of<BookingBloc>(context),
+                              child: const ConfirmationScreen(),
                             ),
                           ),
                         );
