@@ -1,6 +1,7 @@
+import 'package:equatable/equatable.dart';
 import 'package:lavajato/domain/entities/subscription_entity.dart';
 
-class UserEntity {
+class UserEntity extends Equatable {
   final String id;
   final String email;
   final String? name;
@@ -8,7 +9,7 @@ class UserEntity {
   final bool isAdmin;
   final SubscriptionEntity? subscription;
 
-  UserEntity({
+  const UserEntity({
     required this.id,
     required this.email,
     this.name,
@@ -16,4 +17,7 @@ class UserEntity {
     this.isAdmin = false,
     this.subscription,
   });
+
+  @override
+  List<Object?> get props => [id, email, name, photoUrl, isAdmin, subscription];
 }

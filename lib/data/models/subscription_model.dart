@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lavajato/domain/entities/subscription_entity.dart';
 
 class SubscriptionModel extends SubscriptionEntity {
-  SubscriptionModel({
+  const SubscriptionModel({
     required String planId,
     required String status,
     required DateTime currentPeriodEnd,
@@ -12,11 +12,11 @@ class SubscriptionModel extends SubscriptionEntity {
           currentPeriodEnd: currentPeriodEnd,
         );
 
-  factory SubscriptionModel.fromMap(Map<String, dynamic> data) {
+  factory SubscriptionModel.fromMap(Map<String, dynamic> map) {
     return SubscriptionModel(
-      planId: data['planId'] ?? '',
-      status: data['status'] ?? '',
-      currentPeriodEnd: (data['currentPeriodEnd'] as Timestamp).toDate(),
+      planId: map['planId'],
+      status: map['status'],
+      currentPeriodEnd: (map['currentPeriodEnd'] as Timestamp).toDate(),
     );
   }
 }

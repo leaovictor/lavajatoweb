@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lavajato/blocs/auth/auth_bloc.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/booking/select_service_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
@@ -14,7 +16,6 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final AuthService _authService = AuthService();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -43,7 +44,7 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              _authService.signOut();
+              context.read<AuthBloc>().add(AuthLogoutRequested());
             },
             tooltip: 'Sair',
           ),
