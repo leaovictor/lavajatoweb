@@ -1,41 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:lavajato/theme/color_schemes.dart';
 
 class AppTheme {
   static final ThemeData lightTheme = ThemeData(
-    primarySwatch: Colors.blue,
-    brightness: Brightness.light,
     useMaterial3: true,
-    cardTheme: CardThemeData(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+    colorScheme: lightColorScheme,
+    appBarTheme: AppBarTheme(
+      backgroundColor: lightColorScheme.primary,
+      foregroundColor: lightColorScheme.onPrimary,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: lightColorScheme.primary,
+      foregroundColor: lightColorScheme.onPrimary,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        backgroundColor: lightColorScheme.primary,
+        foregroundColor: lightColorScheme.onPrimary,
       ),
+    ),
+    cardTheme: CardTheme(
+      color: lightColorScheme.surfaceVariant,
     ),
   );
 
   static final ThemeData darkTheme = ThemeData(
-    primarySwatch: Colors.blue,
-    brightness: Brightness.dark,
     useMaterial3: true,
-    cardTheme: CardThemeData(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+    colorScheme: darkColorScheme,
+    appBarTheme: AppBarTheme(
+      backgroundColor: darkColorScheme.primary,
+      foregroundColor: darkColorScheme.onPrimary,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: darkColorScheme.primary,
+      foregroundColor: darkColorScheme.onPrimary,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        backgroundColor: darkColorScheme.primary,
+        foregroundColor: darkColorScheme.onPrimary,
       ),
+    ),
+    cardTheme: CardTheme(
+      color: darkColorScheme.surfaceVariant,
     ),
   );
 }

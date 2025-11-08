@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
+import 'package:lavajato/blocs/theme/theme_bloc.dart';
 import 'package:lavajato/screens/appointments/my_appointments_screen.dart';
 import 'package:lavajato/screens/booking/select_service_screen.dart';
 import 'package:lavajato/screens/home/home_screen.dart';
@@ -41,6 +42,23 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Text(titles[_selectedIndex]),
         actions: [
+          IconButton(
+            icon: Icon(
+              Theme.of(context).brightness == Brightness.dark
+                  ? Icons.light_mode
+                  : Icons.dark_mode,
+            ),
+            onPressed: () {
+              final newThemeMode =
+                  Theme.of(context).brightness == Brightness.dark
+                      ? ThemeMode.light
+                      : ThemeMode.dark;
+              context
+                  .read<ThemeBloc>()
+                  .add(ThemeChanged(themeMode: newThemeMode));
+            },
+            tooltip: 'Mudar tema',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

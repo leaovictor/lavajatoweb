@@ -24,6 +24,7 @@ import 'package:lavajato/domain/repositories/admin_repository.dart';
 import 'package:lavajato/domain/repositories/payment_repository.dart';
 import 'package:lavajato/domain/repositories/stripe_repository.dart';
 import 'package:lavajato/domain/repositories/user_repository.dart';
+import 'package:lavajato/blocs/theme/theme_bloc.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/main_screen.dart';
 import 'package:lavajato/services/auth_gate.dart';
@@ -82,6 +83,9 @@ void main() async {
             adminRepository: context.read<AdminRepository>(),
           ),
         ),
+        BlocProvider(
+          create: (context) => ThemeBloc(),
+        ),
       ],
       child: const MyApp(),
     ),
@@ -93,13 +97,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'LavaJato App',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
+    return BlocBuilder<ThemeBloc, ThemeState>(
+      builder: (context, state) {
+        return MaterialApp(
+          title: 'LavaJato App',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: state.themeMode,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
@@ -108,6 +114,8 @@ class MyApp extends StatelessWidget {
       ],
       locale: const Locale('pt', 'BR'),
       home: const AuthGate(),
+    );
+      },
     );
   }
 }
