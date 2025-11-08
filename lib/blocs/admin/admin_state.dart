@@ -8,7 +8,10 @@ class AdminState extends Equatable {
   final int todayAppointments;
   final double mrr;
   final int newSubscriptions;
+  final int churn;
+  final double additionalRevenue;
   final List<UserEntity> clients;
+  final UserEntity? selectedClient;
 
   const AdminState({
     this.status = AdminStatus.initial,
@@ -16,7 +19,10 @@ class AdminState extends Equatable {
     this.todayAppointments = 0,
     this.mrr = 0.0,
     this.newSubscriptions = 0,
+    this.churn = 0,
+    this.additionalRevenue = 0.0,
     this.clients = const [],
+    this.selectedClient,
   });
 
   AdminState copyWith({
@@ -25,7 +31,10 @@ class AdminState extends Equatable {
     int? todayAppointments,
     double? mrr,
     int? newSubscriptions,
+    int? churn,
+    double? additionalRevenue,
     List<UserEntity>? clients,
+    UserEntity? selectedClient,
   }) {
     return AdminState(
       status: status ?? this.status,
@@ -33,10 +42,23 @@ class AdminState extends Equatable {
       todayAppointments: todayAppointments ?? this.todayAppointments,
       mrr: mrr ?? this.mrr,
       newSubscriptions: newSubscriptions ?? this.newSubscriptions,
+      churn: churn ?? this.churn,
+      additionalRevenue: additionalRevenue ?? this.additionalRevenue,
       clients: clients ?? this.clients,
+      selectedClient: selectedClient ?? this.selectedClient,
     );
   }
 
   @override
-  List<Object> get props => [status, activeClients, todayAppointments, mrr, newSubscriptions, clients];
+  List<Object?> get props => [
+        status,
+        activeClients,
+        todayAppointments,
+        mrr,
+        newSubscriptions,
+        churn,
+        additionalRevenue,
+        clients,
+        selectedClient,
+      ];
 }

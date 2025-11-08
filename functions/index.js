@@ -120,3 +120,59 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
     res.status(200).send();
 });
+
+/**
+ * Fetches Stripe dashboard metrics.
+ */
+exports.getStripeDashboardMetrics = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "GET") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      // MRR: Iterate through all active subscriptions and sum up the monthly price.
+      let totalMRR = 0;
+      for await (const subscription of stripe.subscriptions.list({ status: 'active', limit: 100 })) {
+        subscription.items.data.forEach(item => {
+          totalMRR += item.price.unit_amount / 100; // Amount is in cents
+        });
+      }
+
+      // New Subscriptions: Count subscriptions created in the last 30 days.
+      const thirtyDaysAgo = Math.floor((Date.now() - 30 * 24 * 60 * 60 * 1000) / 1000);
+      const newSubscriptions = await stripe.subscriptions.list({
+        created: { gte: thirtyDaysAgo },
+        status: 'all',
+      });
+
+      const churnedSubscriptions = await stripe.subscriptions.list({
+        status: 'canceled',
+        cancel_at_period_end: false,
+        canceled_at: { gte: thirtyDaysAgo },
+      });
+
+      const oneTimePayments = await stripe.charges.list({
+        created: { gte: thirtyDaysAgo },
+      });
+
+      let additionalRevenue = 0;
+      oneTimePayments.data.forEach(charge => {
+        if (charge.customer && !charge.invoice) { // Filter out subscription payments
+          additionalRevenue += charge.amount / 100;
+        }
+      });
+
+      res.status(200).send({
+        mrr: totalMRR,
+        newSubscriptions: newSubscriptions.data.length,
+        churn: churnedSubscriptions.data.length,
+        additionalRevenue: additionalRevenue,
+      });
+    } catch (error) {
+      console.error("Error fetching Stripe metrics:", error);
+      res.status(500).send({ error: error.message });
+    }
+  });
+});

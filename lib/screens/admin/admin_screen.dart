@@ -36,7 +36,7 @@ class AdminScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   GridView.count(
-                    crossAxisCount: 4,
+                    crossAxisCount: 3,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     children: [
@@ -51,6 +51,11 @@ class AdminScreen extends StatelessWidget {
                         icon: Icons.new_releases,
                       ),
                       DashboardCard(
+                        title: 'Churn',
+                        value: state.churn.toString(),
+                        icon: Icons.trending_down,
+                      ),
+                      DashboardCard(
                         title: 'Clientes Ativos',
                         value: state.activeClients.toString(),
                         icon: Icons.people,
@@ -59,6 +64,11 @@ class AdminScreen extends StatelessWidget {
                         title: 'Agendamentos (Hoje)',
                         value: state.todayAppointments.toString(),
                         icon: Icons.calendar_today,
+                      ),
+                      DashboardCard(
+                        title: 'Faturamento Adicional',
+                        value: 'R\$ ${state.additionalRevenue.toStringAsFixed(2)}',
+                        icon: Icons.add_shopping_cart,
                       ),
                     ],
                   ),

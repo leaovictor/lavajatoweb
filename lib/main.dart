@@ -14,16 +14,20 @@ import 'package:lavajato/domain/repositories/service_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/admin/admin_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
+import 'package:lavajato/data/repositories/stripe_repository_impl.dart';
 import 'package:lavajato/data/repositories/user_repository_impl.dart';
+import 'package:lavajato/domain/repositories/stripe_repository.dart';
 import 'package:lavajato/domain/repositories/user_repository.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/main_screen.dart';
 import 'package:lavajato/services/auth_gate.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lavajato/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -54,10 +58,14 @@ void main() async {
         Provider<UserRepository>(
           create: (_) => UserRepositoryImpl(FirebaseFirestore.instance),
         ),
+        Provider<StripeRepository>(
+          create: (_) => StripeRepositoryImpl(),
+        ),
         BlocProvider(
           create: (context) => AdminBloc(
             userRepository: context.read<UserRepository>(),
             appointmentRepository: context.read<AppointmentRepository>(),
+            stripeRepository: context.read<StripeRepository>(),
           ),
         ),
       ],
