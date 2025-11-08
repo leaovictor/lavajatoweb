@@ -12,7 +12,10 @@ import 'package:lavajato/domain/repositories/auth_repository.dart';
 import 'package:lavajato/domain/repositories/plan_repository.dart';
 import 'package:lavajato/domain/repositories/service_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lavajato/blocs/admin/admin_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
+import 'package:lavajato/data/repositories/user_repository_impl.dart';
+import 'package:lavajato/domain/repositories/user_repository.dart';
 import 'package:lavajato/firebase_options.dart';
 import 'package:lavajato/screens/main_screen.dart';
 import 'package:lavajato/services/auth_gate.dart';
@@ -47,6 +50,15 @@ void main() async {
         ),
         Provider<PlanRepository>(
           create: (_) => PlanRepositoryImpl(FirebaseFirestore.instance),
+        ),
+        Provider<UserRepository>(
+          create: (_) => UserRepositoryImpl(FirebaseFirestore.instance),
+        ),
+        BlocProvider(
+          create: (context) => AdminBloc(
+            userRepository: context.read<UserRepository>(),
+            appointmentRepository: context.read<AppointmentRepository>(),
+          ),
         ),
       ],
       child: const MyApp(),

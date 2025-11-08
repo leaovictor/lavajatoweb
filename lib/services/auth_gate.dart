@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
+import 'package:lavajato/screens/admin/admin_screen.dart';
 import 'package:lavajato/screens/auth/login_screen.dart';
 import 'package:lavajato/screens/main_screen.dart';
 
@@ -12,6 +13,9 @@ class AuthGate extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state.status == AuthStatus.authenticated) {
+          if (state.user?.isAdmin ?? false) {
+            return const AdminScreen();
+          }
           return const MainScreen();
         } else {
           return const LoginScreen();

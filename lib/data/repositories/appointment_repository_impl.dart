@@ -64,4 +64,24 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<int> getTodayAppointmentCount() async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final querySnapshot = await _firestore
+          .collection('agendamentos')
+          .where('startTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('startTime', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      return querySnapshot.docs.length;
+    } catch (e) {
+      print('Error fetching today\'s appointment count: $e');
+      rethrow;
+    }
+  }
 }

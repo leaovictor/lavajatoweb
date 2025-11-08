@@ -4,4 +4,5 @@ abstract class AppointmentRepository {
   Future<List<AppointmentEntity>> getUserAppointments(String userId);
   Future<List<AppointmentEntity>> getAppointmentsForDay(DateTime date);
   Future<void> createAppointment(AppointmentEntity appointment);
+  Future<int> getTodayAppointmentCount();
 }
