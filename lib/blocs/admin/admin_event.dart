@@ -19,3 +19,31 @@ class FetchClientDetails extends AdminEvent {
   @override
   List<Object> get props => [userId];
 }
+
+class SuspendSubscription extends AdminEvent {
+  final String subscriptionId;
+
+  const SuspendSubscription(this.subscriptionId);
+
+  @override
+  List<Object> get props => [subscriptionId];
+}
+
+class ReactivateSubscription extends AdminEvent {
+  final String subscriptionId;
+
+  const ReactivateSubscription(this.subscriptionId);
+
+  @override
+  List<Object> get props => [subscriptionId];
+}
+
+class SendPaymentLink extends AdminEvent {
+  final String priceId;
+  final String userId;
+
+  const SendPaymentLink(this.priceId, this.userId);
+
+  @override
+  List<Object> get props => [priceId, userId];
+}

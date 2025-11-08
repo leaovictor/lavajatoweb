@@ -12,6 +12,8 @@ class AdminState extends Equatable {
   final double additionalRevenue;
   final List<UserEntity> clients;
   final UserEntity? selectedClient;
+  final List<AppointmentEntity> serviceHistory;
+  final List<PaymentEntity> paymentHistory;
 
   const AdminState({
     this.status = AdminStatus.initial,
@@ -23,6 +25,8 @@ class AdminState extends Equatable {
     this.additionalRevenue = 0.0,
     this.clients = const [],
     this.selectedClient,
+    this.serviceHistory = const [],
+    this.paymentHistory = const [],
   });
 
   AdminState copyWith({
@@ -35,6 +39,8 @@ class AdminState extends Equatable {
     double? additionalRevenue,
     List<UserEntity>? clients,
     UserEntity? selectedClient,
+    List<AppointmentEntity>? serviceHistory,
+    List<PaymentEntity>? paymentHistory,
   }) {
     return AdminState(
       status: status ?? this.status,
@@ -46,6 +52,8 @@ class AdminState extends Equatable {
       additionalRevenue: additionalRevenue ?? this.additionalRevenue,
       clients: clients ?? this.clients,
       selectedClient: selectedClient ?? this.selectedClient,
+      serviceHistory: serviceHistory ?? this.serviceHistory,
+      paymentHistory: paymentHistory ?? this.paymentHistory,
     );
   }
 
@@ -60,5 +68,7 @@ class AdminState extends Equatable {
         additionalRevenue,
         clients,
         selectedClient,
+        serviceHistory,
+        paymentHistory,
       ];
 }

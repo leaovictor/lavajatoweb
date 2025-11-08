@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/admin/admin_bloc.dart';
 import 'package:lavajato/domain/entities/user_entity.dart';
+import 'package:intl/intl.dart';
 
 class ClientDetailScreen extends StatelessWidget {
   final UserEntity client;
@@ -36,19 +37,35 @@ class ClientDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Histórico de Pagamentos', style: Theme.of(context).textTheme.titleLarge),
-                  // Placeholder for payment history
-                  const ListTile(
-                    leading: Icon(Icons.check_circle, color: Colors.green),
-                    title: Text('Pagamento Mensal - Plano Básico'),
-                    subtitle: Text('R\$ 49,90 - 01/11/2025'),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: state.paymentHistory.length,
+                    itemBuilder: (context, index) {
+                      final payment = state.paymentHistory[index];
+                      return ListTile(
+                        leading: const Icon(Icons.payment),
+                        title: Text('R\$ ${payment.amount.toStringAsFixed(2)}'),
+                        subtitle: Text(DateFormat('dd/MM/yyyy').format(payment.date)),
+                        trailing: Text(payment.status),
+                      );
+                    },
                   ),
                   const Divider(),
                   Text('Histórico de Serviços', style: Theme.of(context).textTheme.titleLarge),
-                  // Placeholder for service history
-                  const ListTile(
-                    leading: Icon(Icons.local_car_wash),
-                    title: Text('Lavagem Completa'),
-                    subtitle: Text('05/11/2025'),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: state.serviceHistory.length,
+                    itemBuilder: (context, index) {
+                      final service = state.serviceHistory[index];
+                      return ListTile(
+                        leading: const Icon(Icons.local_car_wash),
+                        title: Text(service.serviceName),
+                        subtitle: Text(DateFormat('dd/MM/yyyy HH:mm').format(service.startTime)),
+                        trailing: Text(service.status),
+                      );
+                    },
                   ),
                   const Divider(),
                   Text('Ações do Admin', style: Theme.of(context).textTheme.titleLarge),
@@ -57,20 +74,18 @@ class ClientDetailScreen extends StatelessWidget {
                     children: [
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: Implement suspend subscription
+                          context.read<AdminBloc>().add(SuspendSubscription(selectedClient.subscription!.subscriptionId!));
                         },
                         child: const Text('Suspender Plano'),
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: Implement reactivate subscription
+                          context.read<AdminBloc>().add(ReactivateSubscription(selectedClient.subscription!.subscriptionId!));
                         },
                         child: const Text('Reativar Plano'),
                       ),
                       ElevatedButton(
-                        onPressed: () {
-                          // TODO: Implement send payment link
-                        },
+                        onPressed: null, // Disabled for now
                         child: const Text('Enviar Link de Pagamento'),
                       ),
                     ],

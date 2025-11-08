@@ -47,6 +47,108 @@ exports.createSubscriptionCheckoutSession = functions.https.onRequest((req, res)
 });
 
 /**
+ * Creates a Stripe Checkout session for a one-time payment.
+ */
+exports.sendPaymentLink = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const { priceId, userId } = req.body;
+
+      if (!priceId || !userId) {
+        res.status(400).send("Missing required parameters.");
+        return;
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: "https://your-website.com/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url: "https://your-website.com/cancel",
+        client_reference_id: userId,
+      });
+
+      res.status(200).send({ id: session.id });
+    } catch (error) {
+      console.error("Error creating Stripe session:", error);
+      res.status(500).send({ error: error.message });
+    }
+  });
+});
+
+/**
+ * Reactivates a Stripe subscription.
+ */
+exports.reactivateSubscription = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const { subscriptionId } = req.body;
+
+      if (!subscriptionId) {
+        res.status(400).send("Missing subscriptionId.");
+        return;
+      }
+
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
+        pause_collection: null,
+      });
+
+      res.status(200).send({ status: subscription.status });
+    } catch (error) {
+      console.error("Error reactivating subscription:", error);
+      res.status(500).send({ error: error.message });
+    }
+  });
+});
+
+/**
+ * Suspends a Stripe subscription.
+ */
+exports.suspendSubscription = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
+
+    try {
+      const { subscriptionId } = req.body;
+
+      if (!subscriptionId) {
+        res.status(400).send("Missing subscriptionId.");
+        return;
+      }
+
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
+        pause_collection: {
+          behavior: 'void',
+        },
+      });
+
+      res.status(200).send({ status: subscription.status });
+    } catch (error) {
+      console.error("Error suspending subscription:", error);
+      res.status(500).send({ error: error.message });
+    }
+  });
+});
+
+/**
  * Stripe webhook to handle subscription events.
  */
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
@@ -134,10 +236,27 @@ exports.getStripeDashboardMetrics = functions.https.onRequest((req, res) => {
     try {
       // MRR: Iterate through all active subscriptions and sum up the monthly price.
       let totalMRR = 0;
-      for await (const subscription of stripe.subscriptions.list({ status: 'active', limit: 100 })) {
-        subscription.items.data.forEach(item => {
-          totalMRR += item.price.unit_amount / 100; // Amount is in cents
+      let startingAfter = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        const subscriptions = await stripe.subscriptions.list({
+          status: 'active',
+          limit: 100,
+          starting_after: startingAfter,
         });
+
+        subscriptions.data.forEach(subscription => {
+          subscription.items.data.forEach(item => {
+            totalMRR += item.price.unit_amount / 100; // Amount is in cents
+          });
+        });
+
+        if (subscriptions.has_more) {
+          startingAfter = subscriptions.data[subscriptions.data.length - 1].id;
+        } else {
+          hasMore = false;
+        }
       }
 
       // New Subscriptions: Count subscriptions created in the last 30 days.

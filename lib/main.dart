@@ -14,8 +14,14 @@ import 'package:lavajato/domain/repositories/service_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lavajato/blocs/admin/admin_bloc.dart';
 import 'package:lavajato/blocs/auth/auth_bloc.dart';
+import 'package:lavajato/data/repositories/payment_repository_impl.dart';
+import 'package:lavajato/data/repositories/stripe_repository_impl.dart';
+import 'package:lavajato/data/repositories/admin_repository_impl.dart';
+import 'package:lavajato/data/repositories/payment_repository_impl.dart';
 import 'package:lavajato/data/repositories/stripe_repository_impl.dart';
 import 'package:lavajato/data/repositories/user_repository_impl.dart';
+import 'package:lavajato/domain/repositories/admin_repository.dart';
+import 'package:lavajato/domain/repositories/payment_repository.dart';
 import 'package:lavajato/domain/repositories/stripe_repository.dart';
 import 'package:lavajato/domain/repositories/user_repository.dart';
 import 'package:lavajato/firebase_options.dart';
@@ -61,11 +67,19 @@ void main() async {
         Provider<StripeRepository>(
           create: (_) => StripeRepositoryImpl(),
         ),
+        Provider<PaymentRepository>(
+          create: (_) => PaymentRepositoryImpl(FirebaseFirestore.instance),
+        ),
+        Provider<AdminRepository>(
+          create: (_) => AdminRepositoryImpl(),
+        ),
         BlocProvider(
           create: (context) => AdminBloc(
             userRepository: context.read<UserRepository>(),
             appointmentRepository: context.read<AppointmentRepository>(),
             stripeRepository: context.read<StripeRepository>(),
+            paymentRepository: context.read<PaymentRepository>(),
+            adminRepository: context.read<AdminRepository>(),
           ),
         ),
       ],
